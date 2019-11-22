@@ -1,0 +1,216 @@
+<?php namespace ProcessWire;
+
+use Purl\Url;
+
+/**
+ * class DpagesScreenFormatter
+ *
+ * Installs fields, templates, pages, hooks necessary for Screen Formatter Edit Pages
+ */
+class DpagesScreenFormatter extends Dpages implements Module {
+	const FIELDS = array(
+		'jsoncode' => array(
+			'name'  => 'jsoncode',
+			'type'  => 'text',
+			'label' => 'JSON Datafile Code'
+		),
+		'formatter' => array(
+			'name'  => 'formatter',
+			'type'  => 'text',
+			'label' => 'Formatter Module Name'
+		),
+		'twig_include' => array(
+			'name'  => 'twig_include',
+			'type'  => 'text',
+			'label' => 'Twig File that generates formatted screen'
+		)
+	);
+
+	const TEMPLATES = array(
+		'formatter-menu' => array(
+			'name'   => 'formatter-menu',
+			'fields' => array('title', 'summary'),
+			'paginated' => true
+		),
+		'formatter-screen' => array(
+			'name'   => 'formatter-screen',
+			'fields' => array('title', 'jsoncode', 'formatter', 'summary', 'twig_include'),
+			'paginated' => true
+		)
+	);
+
+	const PAGES = array(
+		'screen-formatter-menu' => array(
+			'template'       => 'dplus-function',
+			'name'           => 'screen-formatters',
+			'title'          => 'Screen Formatters',
+			'summary'        => 'Screen Formatters Menu',
+			'parent'         => '/user/',
+			'pw_template'    => 'formatter-menu'
+		),
+		'ii-formatter-menu' => array(
+			'template'       => 'dplus-function',
+			'name'           => 'ii',
+			'title'          => 'II Screen Formatters',
+			'summary'        => 'II Screen Formatters Menu',
+			'parent'         => '/user/screen-formatters/',
+			'pw_template'    => 'formatter-menu'
+		),
+		'ii-sales-orders' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'sales-orders',
+			'title'          => 'II Sales Orders',
+			'summary'        => 'II Sales Orders Formatter',
+			'parent'         => '/user/screen-formatters/ii/',
+			'formatter'      => 'IiSalesOrder',
+			'jsoncode'       => 'ii-sales-orders',
+			'twig_include'   => 'items/ii/sales-orders/sales-orders.twig'
+		),
+		'ii-sales-history' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'sales-history',
+			'title'          => 'II Sales History',
+			'summary'        => 'II Sales History Formatter',
+			'parent'         => '/user/screen-formatters/ii/',
+			'formatter'      => 'IiSalesHistory',
+			'jsoncode'       => 'ii-sales-history',
+			'twig_include'   => 'items/ii/sales-history/sales-history.twig'
+		),
+		'ii-quotes' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'quotes',
+			'title'          => 'II Quotes',
+			'summary'        => 'II Quotes Formatter',
+			'parent'         => '/user/screen-formatters/ii/',
+			'formatter'      => 'IiQuotes',
+			'jsoncode'       => 'ii-quotes',
+			'twig_include'   => 'items/ii/quotes/quotes.twig'
+		),
+		'ii-purchase-orders' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'purchase-orders',
+			'title'          => 'II Purchase Orders',
+			'summary'        => 'II Purchase Orders Formatter',
+			'parent'         => '/user/screen-formatters/ii/',
+			'formatter'      => 'IiPurchaseOrders',
+			'jsoncode'       => 'ii-purchase-orders',
+			'twig_include'   => 'items/ii/purchase-orders/purchase-orders.twig'
+		),
+		'ii-purchase-history' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'purchase-history',
+			'title'          => 'II Purchase History',
+			'summary'        => 'II Purchase History Formatter',
+			'parent'         => '/user/screen-formatters/ii/',
+			'formatter'      => 'IiPurchaseHistory',
+			'jsoncode'       => 'ii-purchase-history',
+			'twig_include'   => 'items/ii/purchase-history/purchase-history.twig'
+		),
+		'ci-formatter-menu' => array(
+			'template'       => 'dplus-function',
+			'name'           => 'ci',
+			'title'          => 'CI Screen Formatters',
+			'summary'        => 'CI Screen Formatters Menu',
+			'parent'         => '/user/screen-formatters/',
+			'pw_template'    => 'formatter-menu'
+		),
+		'ci-sales-orders' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'sales-orders',
+			'title'          => 'CI Sales Orders',
+			'summary'        => 'CI Sales Orders Formatter',
+			'parent'         => '/user/screen-formatters/ci/',
+			'formatter'      => 'CiSalesOrder',
+			'jsoncode'       => 'ci-sales-orders',
+			'twig_include'   => 'customers/ci/sales-orders/sales-orders.twig'
+		),
+		'ci-sales-history' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'sales-history',
+			'title'          => 'CI Sales History',
+			'summary'        => 'CI Sales History Formatter',
+			'parent'         => '/user/screen-formatters/ci/',
+			'formatter'      => 'CiSalesHistory',
+			'jsoncode'       => 'ci-sales-history',
+			'twig_include'   => 'customers/ci/sales-history/sales-history.twig'
+		),
+		'ci-quotes' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'quotes',
+			'title'          => 'CI Quotes',
+			'summary'        => 'CI Quotes Formatter',
+			'parent'         => '/user/screen-formatters/ci/',
+			'formatter'      => 'CiQuotes',
+			'jsoncode'       => 'ci-quotes',
+			'twig_include'   => 'customers/ci/quotes/quotes.twig'
+		),
+		'ci-open-invoices' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'open-invoices',
+			'title'          => 'CI Open Invoices',
+			'summary'        => 'CI Open Invoices Formatter',
+			'parent'         => '/user/screen-formatters/ci/',
+			'formatter'      => 'CiOpenInvoices',
+			'jsoncode'       => 'ci-open-invoices',
+			'twig_include'   => 'customers/ci/open-invoices/open-invoices.twig'
+		),
+		'ci-payments' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'payments',
+			'title'          => 'CI Payments',
+			'summary'        => 'CI Payments Formatter',
+			'parent'         => '/user/screen-formatters/ci/',
+			'formatter'      => 'CiPayments',
+			'jsoncode'       => 'ci-payments',
+			'twig_include'   => 'customers/ci/payments/payments.twig'
+		),
+		'vi-formatter-menu' => array(
+			'template'       => 'dplus-function',
+			'name'           => 'vi',
+			'title'          => 'VI Screen Formatters',
+			'summary'        => 'VI Screen Formatters Menu',
+			'parent'         => '/user/screen-formatters/',
+			'pw_template'    => 'formatter-menu'
+		),
+		'vi-purchase-orders' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'purchase-orders',
+			'title'          => 'VI Purchase Orders',
+			'summary'        => 'VI Purchase Orders Formatter',
+			'parent'         => '/user/screen-formatters/vi/',
+			'formatter'      => 'ViPurchaseOrders',
+			'jsoncode'       => 'vi-purchase-orders',
+			'twig_include'   => 'vendors/vi/purchase-orders/purchase-orders.twig'
+		),
+		'vi-open-invoices' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'open-invoices',
+			'title'          => 'VI Open Invoices',
+			'summary'        => 'VI Open Invoices Formatter',
+			'parent'         => '/user/screen-formatters/vi/',
+			'formatter'      => 'ViOpenInvoices',
+			'jsoncode'       => 'vi=openinvoices',
+			'twig_include'   => 'vendors/vi/open-invoices/open-invoices.twig'
+		),
+		'vi-purchase-history' => array(
+			'template'       => 'formatter-screen',
+			'name'           => 'purchase-history',
+			'title'          => 'VI Purchase History',
+			'summary'        => 'VI Purchase History Formatter',
+			'parent'         => '/user/screen-formatters/vi/',
+			'formatter'      => 'ViPurchaseHistory',
+			'jsoncode'       => 'vi-purchase-history',
+			'twig_include'   => 'vendors/vi/purchase-history/purchase-history.twig'
+		),
+	);
+
+	public static function getModuleInfo() {
+		return array(
+			'title' => 'Dplus Online Screen Formatter Pages',
+			'version' => 101,
+			'summary' => 'Installs and creates Screen Formatter Pages',
+			'singular' => true,
+			'autoload' => true,
+		);
+	}
+}

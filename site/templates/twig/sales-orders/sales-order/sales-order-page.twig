@@ -1,0 +1,12 @@
+{% include 'sales-orders/sales-order/links-header.twig' with {'list': 'orders'} %}
+
+{% include 'sales-orders/sales-order/sales-order-header.twig' %}
+
+<h3 class="font-weight-bold text-secondary mt-4">Order Items</h3>
+{% include 'sales-orders/sales-order/sales-order-items.twig' %}
+
+{% if user.can_editorder(order) %}
+	<a href="{{ page.edit_orderURL(order.ordernumber) }}" class="btn btn-warning btn-block mb-5">
+		Edit Order&ensp;<i class="fa fa-pencil" aria-hidden="true"></i>
+	</a>
+{% endif %}

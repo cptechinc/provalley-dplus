@@ -1,0 +1,13 @@
+{% if not page.print %}
+	<div class="form-group">
+		<a href="{{ page.url }}" class="btn btn-primary not-round">
+			<i class="fa fa-arrow-left" aria-hidden="true"></i> Back to Search
+		</a>
+		&nbsp;
+		<a href="{{ page.child.url ~ '?' ~ page.fullURL.query }}" class="btn btn-primary not-round">
+			<i class="fa fa-print" aria-hidden="true"></i> Print
+		</a>
+		&nbsp;
+		<button class="btn btn-secondary show-hide-all">Show / Hide All</button>
+	</div>
+{% endif %}
