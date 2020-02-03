@@ -117,6 +117,27 @@ a.link:hover {
 	background-color: #bcdcef;
 }
 
+.text-white a.link {
+	color: white;
+}
+
+a.image-link {
+	text-decoration: none;
+	background-color: transparent;
+	border: 5px solid #bcdcef;
+	-webkit-transition: background .15s cubic-bezier(0.33, 0.66, 0.66, 1);
+	-o-transition: background .15s cubic-bezier(0.33, 0.66, 0.66, 1);
+	transition: background .15s cubic-bezier(0.33, 0.66, 0.66, 1);
+	-webkit-box-shadow: inset 0 -4px 0 #bcdcef;
+	box-shadow: inset 0 -4px 0 #bcdcef;
+	display: inline-block;
+}
+
+a.image-link:hover {
+	border-color: #8ba2b0;
+}
+
+
 /************************************** Navbar **************************************/
 #yt-menu {
 	width: 300px;
@@ -164,4 +185,8 @@ a.link:hover {
 .scroll-300 {
 	overflow-y: scroll;
 	max-height: 300px;
+}
+
+.highlight {
+	background: #FADA5E;
 }

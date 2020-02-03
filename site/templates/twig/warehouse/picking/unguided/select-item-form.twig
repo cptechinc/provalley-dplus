@@ -8,7 +8,7 @@
 			<div class="list-group">
 
 				{% for item in items_unpicked %}
-					<a href="{{ page.get_selectlineURL(item) }}" class="list-group-item">
+					<a href="{{ page.get_selectpickitemURL(item) }}" class="list-group-item">
 						<div class="row">
 							<div class="col-sm-6">
 								<h4 class="list-group-item-heading">{{ item.itemid }}</h4>

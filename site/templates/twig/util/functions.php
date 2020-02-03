@@ -18,6 +18,11 @@
 	});
 	$config->twig->addFilter($filter);
 
+	$filter = new TwigFilter('round', function ($number) {
+		return number_format($number, 4, '.', ",");
+	});
+	$config->twig->addFilter($filter);
+
 	$filter = new TwigFilter('convertdate', function ($date, $format = 'm/d/Y') {
 		$date = date($format, strtotime($date));
 		return $date == '11/30/-0001' ? '' : $date;
@@ -26,6 +31,11 @@
 
 	$filter = new TwigFilter('yesorno', function ($trueorfalse) {
 		return ($trueorfalse === true || strtoupper($trueorfalse) == 'Y') ? 'yes' : 'no';
+	});
+	$config->twig->addFilter($filter);
+
+	$filter = new TwigFilter('bool', function ($tf) {
+		return boolval($tf);
 	});
 	$config->twig->addFilter($filter);
 

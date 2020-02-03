@@ -15,17 +15,6 @@ class CodeTablesCcm extends WireData implements Module {
 	const DESCRIPTION        = 'Customer Commission Code';
 	const DESCRIPTION_RECORD = 'Customer Commission Code';
 
-	const CODE_TABLES = array(
-		'ccm' => array(
-			'code'        => 'ccm',
-			'code-twig'   => 'customer-commission',
-			'description' => 'Customer Commission Code',
-			'description-record' => 'Customer Commission Code',
-			'model'       => 'CustomerCommissionCode',
-			'model-key'   => 'code'
-		)
-	);
-
 	public function __construct() {
 		$this->description = self::DESCRIPTION;
 	}
@@ -33,11 +22,39 @@ class CodeTablesCcm extends WireData implements Module {
 	/**
 	 * Return the Code records from Database
 	 * @param  string $table Table Code
-	 * @return ObjectCollection
+	 * @return CustomerCommissionCode[]|ObjectCollection
 	 */
 	public function get_codes() {
 		$q = $this->get_query();
 		return $q->find();
+	}
+
+	/**
+	 * Return the Code
+	 * @param  string $code Customer Commission Code
+	 * @return CustomerCommissionCode
+	 */
+	public function get_code($code) {
+		$q = $this->get_query();
+		return $q->findOneByCode($code);
+	}
+
+	/**
+	 * Return if the Code Exists
+	 * @param  string $code Customer Commission Code
+	 * @return bool
+	 */
+	public function code_exists($code) {
+		$q = $this->get_query();
+		return boolval($q->filterByCode($code)->count());
+	}
+
+	/**
+	 * Returns a new CustomerCommissionCode
+	 * @return CustomerCommissionCode
+	 */
+	public function get_new_code() {
+		return new CustomerCommissionCode();
 	}
 
 	/**
@@ -53,6 +70,9 @@ class CodeTablesCcm extends WireData implements Module {
 	 * Takes Input, validates it's for one of the code tables
 	 * Processes it, and if updated sends request to dplus
 	 *
+	 * NOTE: If an existing code is more than CustomerCommissionCode::MAX_LENGTH_CODE, we will allow editing
+	 * but we won't allow creation of a code with more than allowed characters we will trim it.
+	 *
 	 * @param  WireInput $input Input
 	 * @return void
 	 */
@@ -67,6 +87,7 @@ class CodeTablesCcm extends WireData implements Module {
 		if ($q->count()) {
 			$record = $q->findOne();
 		} else {
+			$code  = $input->$rm->text('code', array('maxLength' => CustomerCommissionCode::MAX_LENGTH_CODE));
 			$record = new CustomerCommissionCode();
 			$record->setCode($code);
 		}
@@ -77,7 +98,8 @@ class CodeTablesCcm extends WireData implements Module {
 			$description = $input->$rm->text('description');
 			$record->setDescription($description);
 			$record->setDate(date('Ymd'));
-			$record->setTime(0);
+			$record->setTime(date('His'));
+			$record->setDummy('P');
 		}
 
 		$this->wire('session')->response_codetable = $this->save_and_process_response($table, $code, $record);
@@ -124,6 +146,15 @@ class CodeTablesCcm extends WireData implements Module {
 			$this->wire('modules')->get('CodeTables')->update_dplus_cobol($table, $code);
 		}
 		return $response;
+	}
+
+	/**
+	 * Return the Max Length of characters for the code
+	 * NOTE: Used for the JS
+	 * @return int
+	 */
+	public function get_max_length_code() {
+		return CustomerCommissionCode::MAX_LENGTH_CODE;
 	}
 
 	public static function getModuleInfo() {

@@ -16,7 +16,7 @@
 		$inventory = InvsearchQuery::create();
 		$resultscount = InvsearchQuery::create()->countDistinctItemid(session_id());
 		$items = InvsearchQuery::create()->findDistinctItems(session_id());
-		
+
 		if (file_exists($config->paths->templates."twig/warehouse/inventory/find-item/$config->company/results.twig")) {
 			$page->body .= $config->twig->render("warehouse/inventory/find-item/$config->company/results.twig", ['page' => $page, 'config' => $config_inventory, 'resultscount' => $resultscount, 'items' => $items, 'inventory' => $inventory, 'warehouse' => $warehouse]);
 		} else {

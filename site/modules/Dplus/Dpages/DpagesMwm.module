@@ -129,12 +129,21 @@ class DpagesMwm extends Dpages implements Module {
 		),
 		'whse-binr-contents' => array(
 			'template'       => 'warehouse-function',
-			'name'           => 'sales-history',
+			'name'           => 'binr-contents',
 			'title'          => 'Move Bin Contents',
 			'summary'        => 'Move all Bin Items',
 			'parent'         => '/warehouse/binr/',
 			'dplus_function' => 'pmvbn',
 			'pw_template'    => 'whse-binr-contents'
+		),
+		'whse-binr-inquiry' => array(
+			'template'       => 'dplus-function-link',
+			'name'           => 'bin-inquiry',
+			'title'          => 'Bin Inquiry',
+			'summary'        => 'Show Items in a bin',
+			'parent'         => '/warehouse/binr/',
+			'dplus_function' => 'pbini',
+			'pw_template'    => 'whse-bin-inquiry'
 		),
 		'menu-inventory' => array(
 			'template'       => 'warehouse-menu',
@@ -161,24 +170,6 @@ class DpagesMwm extends Dpages implements Module {
 			'parent'         => '/warehouse/inventory/',
 			'dplus_function' => 'pbini',
 			'pw_template'    => 'whse-bin-inquiry'
-		),
-		'whse-binr-contents' => array(
-			'template'       => 'warehouse-function',
-			'name'           => 'move-contents',
-			'title'          => 'Bin Inquiry',
-			'summary'        => 'Show Items in a bin',
-			'parent'         => '/warehouse/binr/',
-			'dplus_function' => 'pmvbn',
-			'pw_template'    => 'whse-binr-contents'
-		),
-		'whse-binr-contents' => array(
-			'template'       => 'warehouse-function',
-			'name'           => 'move-contents',
-			'title'          => 'Bin Inquiry',
-			'summary'        => 'Show Items in a bin',
-			'parent'         => '/warehouse/binr/',
-			'dplus_function' => 'pmvbn',
-			'pw_template'    => 'whse-binr-contents'
 		),
 		'whse-print-item-label' => array(
 			'template'       => 'warehouse-function',
@@ -312,7 +303,7 @@ class DpagesMwm extends Dpages implements Module {
 			$p = $event->object;
 			$ordn    = $event->arguments(0);
 			$linenbr = $event->arguments(1);
-			$url = new Url($this->wire('pages')->get('pw_template=whse-print-order-item-label')->url);
+			$url = new Url($this->wire('pages')->get('pw_template=whse-print-pick-item-label')->url);
 			$url->query->set('ordn', $ordn);
 			$url->query->set('linenbr', $linenbr);
 			$url->query->set('returnpage', $p->fullURL->getUrl());

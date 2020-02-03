@@ -30,18 +30,6 @@ class ConfigsWarehousePicking extends Process implements ConfigurableModule {
 		'use_singleunitqty' => true
 	);
 
-	public function init() {
-		parent::init();
-
-		foreach(self::DEFAULT_CONFIG as $key => $value) {
-			if (isset($this->data[$key])) {
-				$this->data[$key] = $this->data[$key];
-			} else {
-				$this->data[$key] = $value;
-			}
-		}
-	}
-
 	/**
 	 * ProcessWire Module Info
 	 *

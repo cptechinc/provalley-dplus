@@ -7,8 +7,22 @@
 
 	$template = '';
 
-	$template = 'whse-picking-unguided';
-	$action = 'start-pick-unguided';
+	switch ($config_picking->picking_method) {
+		case 'guided':
+			$template = 'whse-picking-guided';
+			break;
+		case 'unguided';
+			$template = 'whse-picking-unguided';
+			break;
+	}
+	switch ($config_picking->picking_method) {
+		case 'guided':
+			$action = 'start-pick';
+			break;
+		case 'unguided';
+			$action = 'start-pick-unguided';
+			break;
+	}
 
 	// CHECK If Sales Order is Provided
 	if ($input->get->ordn) {

@@ -5,7 +5,7 @@
 		$page->show_breadcrumbs = false;
 		$page->body .= $config->twig->render('vendors/vi/bread-crumbs.twig', ['page' => $page, 'vendor' => $vendor]);
 		$page->body .= $config->twig->render('vendors/vi/vi-links.twig', ['page' => $page]);
-
+		
 		if ($input->get->shipfromID) {
 			$shipfromID = $input->get->text('shipfromID');
 			$load_shipfrom = $load_vendor;
