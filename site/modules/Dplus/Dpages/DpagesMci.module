@@ -2,6 +2,8 @@
 
 use Purl\Url;
 
+include_once(__DIR__.'/Dpages.module');
+
 /**
  * class DpagesMci
  *
@@ -652,6 +654,7 @@ class DpagesMci extends Dpages implements Module {
 			'summary' => 'Installs and creates Dplus Online Customer Pages',
 			'singular' => true,
 			'autoload' => true,
+			'requires' => array('Dpages')
 		);
 	}
 }

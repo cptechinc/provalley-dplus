@@ -4,6 +4,8 @@ use Purl\Url;
 use QuoteQuery, Quote;
 use LogpermQuery, Logperm;
 
+include_once(__DIR__.'/Dpages.module');
+
 /**
  * class DpagesMqo
  *
