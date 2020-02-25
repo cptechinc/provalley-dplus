@@ -1,5 +1,6 @@
 <?php
 	$html = $modules->get('HtmlWriter');
+	$page->focus = $input->get->focus ? $input->get->text('focus') : '';
 
 	if ($input->get->code) {
 		$code = $whseID = $input->get->text('code');
@@ -21,8 +22,9 @@
 				$page->body .= $html->div('class=mb-3');
 			}
 		}
-
+		$page->customerlookupURL = $pages->get('pw_template=mci-lookup')->url;
 		$page->body .= $config->twig->render("code-tables/min/$page->codetable/form.twig", ['page' => $page, 'table' => $page->codetable, 'warehouse' => $warehouse, 'config_in' => $config_in, 'states' => $states, 'countries' => $countries, 'warehouses' => $warehouses]);
+		$page->body .= $config->twig->render("util/ajax-modal.twig", []);
 		$page->js   .= $config->twig->render("code-tables/min/$page->codetable/js.twig", ['page' => $page, 'warehouse' => $warehouse]);
 
 		// SHOW NOTES IF TABLE ALREADY EXISTS

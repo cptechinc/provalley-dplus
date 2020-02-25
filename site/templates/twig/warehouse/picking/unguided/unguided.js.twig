@@ -1,0 +1,21 @@
+$(function() {
+	$("#code-edit-form").validate({
+		errorClass: "is-invalid",
+		rules: {
+			{% for item in items %}
+				'{{ qty ~ '-' ~ {{ item.recordnumber }} }}': {
+					required: true;
+					range: [1, {{ item.qty }} }}]
+				}
+			{% endfor %}
+		},
+		messages: {
+			{% for item in items %}
+				'{{ qty ~ '-' ~ {{ item.recordnumber }} }}': 'Enter a valid Qty for this item'
+			{% endfor %}
+		},
+		submitHandler: function(form) {
+			form.submit();
+		}
+	});
+});

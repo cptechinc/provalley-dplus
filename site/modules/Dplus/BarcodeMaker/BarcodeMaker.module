@@ -73,4 +73,14 @@ class BarcodeMaker extends WireData implements Module {
 		$class = get_class($this->generator);
 		return $this->generator->getBarcode($code, constant("$class::$this->barcode_type"));
 	}
+
+	public static function getModuleInfo() {
+			return array(
+				'title' => 'Dpluso PDF Maker',
+				'version' => 101,
+				'summary' => 'Handles PDF Maker',
+				'singular' => true,
+				'autoload' => true,
+			);
+		}
 }

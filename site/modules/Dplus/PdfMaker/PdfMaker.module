@@ -214,4 +214,14 @@ class PdfMaker extends WireData implements Module {
 
 		return $file;
 	}
+
+	public static function getModuleInfo() {
+			return array(
+				'title' => 'Dpluso PDF Maker',
+				'version' => 101,
+				'summary' => 'Handles PDF Maker',
+				'singular' => true,
+				'autoload' => true,
+			);
+		}
 }

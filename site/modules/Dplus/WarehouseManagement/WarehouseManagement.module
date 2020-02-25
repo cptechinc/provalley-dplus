@@ -1,0 +1,42 @@
+<?php namespace ProcessWire;
+
+class WarehouseManagement extends WireData implements Module {
+
+
+	const PICKING_OPTIONS_COMPANY = array(
+		'provalley' => 'PickingProvalley'
+	);
+
+	/**
+	 * Returns Picking Module for Customer if they have custom
+	 * @param  string $dpluscustomer Dplus Company Code Name
+	 * @return WireData
+	 */
+	public function get_picking_module($dpluscustomer) {
+		$module = 'Picking';
+
+		if (array_key_existS($dpluscustomer, self::PICKING_OPTIONS_COMPANY)) {
+			$module = self::PICKING_OPTIONS_COMPANY[$dpluscustomer];
+		}
+
+		return $this->wire('modules')->get($module);
+	}
+
+/* =============================================================
+	ProcessWire Module Functions
+============================================================= */
+	/**
+	 * ProcessWire Module Info
+	 *
+	 * @return void
+	 */
+	public static function getModuleInfo() {
+		return array(
+			'title' => 'Dpluso Warehouse Management',
+			'version' => 101,
+			'summary' => 'Handles Loading Warehouse Management Functions',
+			'singular' => true,
+			'autoload' => false,
+		);
+	}
+}
