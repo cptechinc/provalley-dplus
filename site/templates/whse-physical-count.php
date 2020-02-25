@@ -27,6 +27,12 @@
 				$page->fullURL->query->remove('scan');
 				$session->redirect($page->fullURL->getUrl());
 			}
+			$page->title = "Physical Count for $physicalitem->itemid";
+
+			if ($physicalitem->is_complete()) {
+				$page->fullURL->query->remove('scan');
+				$session->redirect($page->fullURL->getUrl());
+			}
 
 			if ($physicalitem->has_error()) {
 				$page->body .= $config->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => $physicalitem->get_error()]);
