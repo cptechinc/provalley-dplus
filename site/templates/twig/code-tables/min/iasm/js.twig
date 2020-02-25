@@ -21,15 +21,6 @@ $(function() {
 		}
 	});
 
-	$('#edit-code-modal').on('hidden.bs.modal', function (event) {
-		var modal = $(this);
-		var button = $(event.relatedTarget); // Button that triggered the modal
-		var code = modal.find('input[name=code]').val();
-		$('.highlight').removeClass('highlight');
-		$('#code-'+code).addClass('highlight');
-	});
-
-
 	$("#code-edit-form").validate({
 		errorClass: "is-invalid",
 		validClass: "is-valid",
@@ -41,9 +32,11 @@ $(function() {
 				required: true,
 				maxlength: {{ max_length_code }}
 			},
+			description: 'required'
 		},
 		messages: {
 			code: "Please check the Code value (Max Length: {{ max_length_code }})",
+			description: 'Please enter a description for the code'
 		},
 		submitHandler: function(form) {
 			form.submit();

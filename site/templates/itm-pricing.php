@@ -16,7 +16,7 @@
 
 			if ($session->response_itm) {
 				$page->body .= $config->twig->render('items/itm/response-alert.twig', ['response' => $session->response_itm]);
-				// $session->remove('response_itm');
+				$session->remove('response_itm');
 			}
 
 			$page->headline = "Pricing for $itemID";
