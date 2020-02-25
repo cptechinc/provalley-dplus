@@ -2,7 +2,7 @@
 	<strong>Bin:</strong> (MULTIPLE)
 	<strong>Boxes:</strong> {{ inventory.count_lotserials_itemid(item.sessionid, item.itemid) }}
 	<strong>Qty:</strong> {{ inventory.get_qty_itemid(item.sessionid, item.itemid) }}
-	{% if (not page.print) %}
+	{% if (not page.is_print()) %}
 	<button type="button" class="btn btn-primary btn-sm mb-3" data-toggle="collapse" data-target="#{{ item.itemid|attrJS }}-lotserial" aria-expanded="false" aria-controls="{{ item.itemid }}-lotserial">
 		Show / Hide {{ item.get_itemtypepropertydesc()|upper ~ "S" }}
 	</button>
