@@ -28,8 +28,24 @@ class DpagesMin extends Dpages implements Module {
 			'name'   => 'min-code-table-tarm',
 			'fields' => array()
 		),
-		'upc-xref' => array(
+		'min-code-table-ioptm' => array(
+			'name'   => 'min-code-table-ioptm',
+			'fields' => array()
+		),
+		'upcx' => array(
 			'name'   => 'upcx',
+			'fields' => array()
+		),
+		'itm' => array(
+			'name'   => 'itm',
+			'fields' => array()
+		),
+		'itm-pricing' => array(
+			'name'   => 'itm-pricing',
+			'fields' => array()
+		),
+		'itm-json' => array(
+			'name'   => 'itm-json',
 			'fields' => array()
 		),
 	);
@@ -167,7 +183,52 @@ class DpagesMin extends Dpages implements Module {
 			'summary'        => 'View / Edit UPCs',
 			'parent'         => '/min/inmain/',
 			'dplus_function' => 'upcx'
-		)
+		),
+		'min-iarn' => array(
+			'template'       => 'dplus-function',
+			'pw_template'    => 'min-code-table',
+			'name'           => 'iarn',
+			'title'          => 'Inventory Adjustment Reason',
+			'summary'        => 'View / Edit Inventory Adjustment Reason',
+			'parent'         => '/min/inmain/',
+			'dplus_function' => 'iarn'
+		),
+		'min-ioptm' => array(
+			'template'       => 'dplus-function',
+			'pw_template'    => 'min-code-table',
+			'name'           => 'ioptm',
+			'title'          => 'Inventory Optional Codes',
+			'summary'        => 'View / Edit Inventory Optional Codes',
+			'parent'         => '/min/inmain/',
+			'dplus_function' => 'ioptm'
+		),
+		'itm' => array(
+			'template'       => 'dplus-function',
+			'pw_template'    => 'itm',
+			'name'           => 'itm',
+			'title'          => 'ITM',
+			'summary'        => 'View / Edit Item',
+			'parent'         => '/min/inmain/',
+			'dplus_function' => 'itm'
+		),
+		'itm-pricing' => array(
+			'template'       => 'dplus-function',
+			'pw_template'    => 'itm-pricing',
+			'name'           => 'pricing',
+			'title'          => 'ITM Pricing',
+			'summary'        => 'View / Edit Item Pricing',
+			'parent'         => '/min/inmain/',
+			'dplus_function' => ''
+		),
+		'itm-json' => array(
+			'template'       => 'dplus-json',
+			'pw_template'    => 'itm-json',
+			'name'           => 'itm',
+			'title'          => 'ITM',
+			'summary'        => 'View / Edit Item',
+			'parent'         => '/min/inmain/itm/',
+			'dplus_function' => ''
+		),
 	);
 
 /* =============================================================
@@ -209,7 +270,12 @@ class DpagesMin extends Dpages implements Module {
 
 	public function get_codetable_viewURL($table, $code = false) {
 		$url = new Url($this->wire('pages')->get("pw_template=min-code-table, name=$table")->url);
-		$url->query->set('code', $code);
+
+		if ($table == 'ioptm') {
+			$url->query->set('sysop', $code);
+		} else {
+			$url->query->set('code', $code);
+		}
 		return $url->getUrl();
 	}
 
@@ -232,7 +298,6 @@ class DpagesMin extends Dpages implements Module {
 		$url->query->set('code', $code);
 		return $url->getUrl();
 	}
-
 
 	/**
 	 * ProcessWire Module Info

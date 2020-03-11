@@ -2,8 +2,6 @@
 
 use Purl\Url;
 
-include_once(__DIR__.'/Dpages.module');
-
 /**
  * class DpagesMci
  *
@@ -117,7 +115,11 @@ class DpagesMci extends Dpages implements Module {
 		'ci-activity' => array(
 			'name'   => 'ci-activity',
 			'fields' => array(),
-		)
+		),
+		'mci-lookup' => array(
+			'name'   => 'mci-lookup',
+			'fields' => array(),
+		),
 	);
 
 	const PAGES = array(
@@ -128,6 +130,23 @@ class DpagesMci extends Dpages implements Module {
 			'summary'        => 'Customer Menu',
 			'parent'         => '/',
 			'dplus_function' => 'mci'
+		),
+		'ci-admin' => array(
+			'template'       => 'dplus-menu',
+			'name'           => 'admin',
+			'title'          => 'CI Administration',
+			'summary'        => 'Customer Information Administration',
+			'parent'         => '/mci/',
+			'dplus_function' => 'ciadmn'
+		),
+		'mci-lookup' => array(
+			'template'       => 'dplus-function',
+			'name'           => 'lookup',
+			'title'          => 'Customer Lookup',
+			'summary'        => 'Lookup Customers',
+			'parent'         => '/mci/',
+			'dplus_function' => '',
+			'pw_template'    => 'mci-lookup'
 		),
 		'ci' => array(
 			'template'       => 'dplus-function',
