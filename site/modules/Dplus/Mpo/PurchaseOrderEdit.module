@@ -421,17 +421,23 @@ class PurchaseOrderEdit extends WireData implements Module {
 	}
 
 	/**
+	 * Send PO Header Update Request
+	 * @param  string $ponbr Purchase Order Number
+	 * @return void
+	 */
+	private function request_po_edit($ponbr) {
+		$data = array('EDITPURCHASEORDER', "PONBR=$ponbr");
+		$this->request_dplus($data);
+	}
+
+	/**
 	 * Send PO Update Header
 	 * @param  string $ponbr   Purchase Order Number
 	 * @return void
 	 */
-	public function request_update_header($ponbr) {
-		$config = $this->wire('config');
-		$dplusdb = $this->wire('modules')->get('DplusOnlineDatabase')->db_name;
-		$data = array("DBNAME=$dplusdb", 'SAVEPURCHASEORDERHEADER', "PONBR=$ponbr");
-		$requestor = $this->wire('modules')->get('DplusRequest');
-		$requestor->write_dplusfile($data, session_id());
-		$requestor->cgi_request($config->cgis['default'], $this->sessionID);
+	private function request_update_header($ponbr) {
+		$data = array('SAVEPURCHASEORDERHEADER', "PONBR=$ponbr");
+		$this->request_dplus($data);
 	}
 
 	/**
@@ -440,13 +446,9 @@ class PurchaseOrderEdit extends WireData implements Module {
 	 * @param  string $vendorID  Vendor ID
 	 * @return void
 	 */
-	public function request_create_po($vendorID) {
-		$config = $this->wire('config');
-		$dplusdb = $this->wire('modules')->get('DplusOnlineDatabase')->db_name;
-		$data = array("DBNAME=$dplusdb", 'CREATERECEIVEPO', "VENDORID=$vendorID");
-		$requestor = $this->wire('modules')->get('DplusRequest');
-		$requestor->write_dplusfile($data, session_id());
-		$requestor->cgi_request($config->cgis['warehouse'], $this->sessionID);
+	private function request_create_po($vendorID) {
+		$data = array('CREATERECEIVEPO', "VENDORID=$vendorID");
+		$this->request_dplus($data);
 		return true;
 	}
 
@@ -455,14 +457,19 @@ class PurchaseOrderEdit extends WireData implements Module {
 	 * @param  string $q Query or Item ID
 	 * @return void
 	 */
-	public function request_itemsearch($q) {
-		$config = $this->wire('config');
-		$dplusdb = $this->wire('modules')->get('DplusOnlineDatabase')->db_name;
+	private function request_itemsearch($q) {
+		$data = array("ITNOSRCH=$q", "CUSTID=$config->default_webcustomer");
+		$this->request_dplus($data);
+	}
 
-		$data = array("DBNAME=$dplusdb", "ITNOSRCH=$q", "CUSTID=$config->default_webcustomer");
-		$requestor = $this->wire('modules')->get('DplusRequest');
-		$requestor->write_dplusfile($data, $this->sessionID);
-		$requestor->cgi_request($config->cgis['default'], $this->sessionID);
+	/**
+	 * Send PO Header Update Request
+	 * @param  string $ponbr Purchase Order Number
+	 * @return void
+	 */
+	private function request_po_exit($ponbr) {
+		$data = array('EXITPURCHASEORDER', "PONBR=$ponbr");
+		$this->request_dplus($data);
 	}
 
 /* =============================================================
