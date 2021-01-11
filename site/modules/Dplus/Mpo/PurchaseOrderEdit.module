@@ -118,6 +118,8 @@ class PurchaseOrderEdit extends WireData implements Module {
 				$qnotes->process_input($input);
 				break;
 			case 'exit':
+				$ponbr = $values->text('ponbr');
+				$this->request_po_exist($ponbr);
 				break;
 		}
 	}
@@ -421,7 +423,7 @@ class PurchaseOrderEdit extends WireData implements Module {
 	}
 
 	/**
-	 * Send PO Header Update Request
+	 * Send PO Edit Request
 	 * @param  string $ponbr Purchase Order Number
 	 * @return void
 	 */
@@ -457,7 +459,7 @@ class PurchaseOrderEdit extends WireData implements Module {
 	 * @param  string $q Query or Item ID
 	 * @return void
 	 */
-	private function request_itemsearch($q) {
+	public function request_itemsearch($q) {
 		$data = array("ITNOSRCH=$q", "CUSTID=$config->default_webcustomer");
 		$this->request_dplus($data);
 	}
