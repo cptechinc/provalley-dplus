@@ -1,0 +1,177 @@
+<?php namespace ProcessWire;
+
+use Purl\Url;
+
+/**
+ * class DpagesApi
+ *
+ * Installs fields, templates, pages, hooks necessary for Api Pages
+ * api Pages will provide api functionality to the site if not available through other means
+ */
+class DpagesApi extends Dpages implements Module {
+	const FIELDS = array(
+		'ajaxcode' => array(
+			'name'  => 'ajaxcode',
+			'type'  => 'text',
+			'label' => 'AJAX Code'
+		),
+		'ajaxtype' => array(
+			'name'  => 'ajaxtype',
+			'type'  => 'select',
+			'label' => 'AJAX Code',
+			'options' => array(
+				'lookup' => 'Lookup',
+				'json'   => 'JSON',
+			)
+		),
+	);
+
+	const TEMPLATES = array(
+		'api-menu' => array(
+			'name'   => 'api-menu',
+			'fields' => array('dplus_function', 'summary'),
+			'paginated' => false
+		),
+		'api-json' => array(
+			'name'   => 'api-json',
+			'fields' => array('dplus_function', 'pw_template', 'summary'),
+			'paginated' => true
+		),
+		'api-ajax' => array(
+			'name'   => 'api-ajax',
+			'fields' => array('ajaxtype', 'ajaxcode', 'pw_template', 'summary'),
+			'paginated' => true
+		),
+		'api-ajax-lookup' => array(
+			'name'   => 'api-ajax-lookup',
+			'fields' => array(),
+			'paginated' => true
+		),
+	);
+
+	const PAGES = array(
+		'api' => array(
+			'template'       => 'api-menu',
+			'name'           => 'api',
+			'title'          => 'API Menu',
+			'summary'        => 'API Menu',
+			'parent'         => '/',
+			'dplus_function' => ''
+		),
+		'menu-json' => array(
+			'template'       => 'api-menu',
+			'name'           => 'json',
+			'title'          => 'API JSON Menu',
+			'summary'        => 'API JSON Menu',
+			'parent'         => '/api/',
+			'dplus_function' => ''
+		),
+		'json-inv' => array(
+			'template'       => 'dplus-json',
+			'name'           => 'inv',
+			'title'          => 'API JSON INV',
+			'summary'        => 'API JSON INV',
+			'parent'         => '/api/json/',
+			'pw_template'    => 'api-ajax-json-inv'
+		),
+		'json-mso' => array(
+			'template'       => 'dplus-json',
+			'name'           => 'mso',
+			'title'          => 'API JSON MSO',
+			'summary'        => 'API JSON MSO',
+			'parent'         => '/api/json/',
+			'pw_template'    => 'api-ajax-json-mso'
+		),
+		'json-msa' => array(
+			'template'       => 'dplus-json',
+			'name'           => 'mso',
+			'title'          => 'API JSON MSA',
+			'summary'        => 'API JSON MSA',
+			'parent'         => '/api/json/',
+			'pw_template'    => 'api-ajax-json-msa'
+		),
+		'json-mki' => array(
+			'template'       => 'dplus-json',
+			'name'           => 'mso',
+			'title'          => 'API JSON MKI',
+			'summary'        => 'API JSON MKI',
+			'parent'         => '/api/json/',
+			'pw_template'    => 'api-ajax-json-mki'
+		),
+		'json-mci' => array(
+			'template'       => 'dplus-json',
+			'name'           => 'mci',
+			'title'          => 'API JSON MCI',
+			'summary'        => 'API JSON MCI',
+			'parent'         => '/api/json/',
+			'pw_template'    => 'api-ajax-json-mci'
+		),
+		'json-map' => array(
+			'template'       => 'dplus-json',
+			'name'           => 'mpo',
+			'title'          => 'API JSON MAP',
+			'summary'        => 'API JSON MAP',
+			'parent'         => '/api/json/',
+			'pw_template'    => 'api-ajax-json-map'
+		),
+		'menu-lookup' => array(
+			'template'       => 'api-menu',
+			'name'           => 'lookup',
+			'title'          => 'API Lookup Menu',
+			'summary'        => 'API Lookup Menu',
+			'parent'         => '/api/',
+			'dplus_function' => ''
+		),
+		'lookup-country-codes' => array(
+			'template'       => 'api-ajax',
+			'name'           => 'country-codes',
+			'title'          => 'Lookup Country Codes',
+			'summary'        => 'Lookup Country Codes',
+			'parent'         => '/api/lookup/',
+			'ajaxtype'       => '',
+			'ajaxcode'       => '',
+			'pw_template'    => 'lookup-country-codes'
+		),
+		'lookup-tariff-codes' => array(
+			'template'       => 'api-ajax',
+			'name'           => 'tariff-codes',
+			'title'          => 'Lookup Tariff Codes',
+			'summary'        => 'Lookup Tariff Codes',
+			'parent'         => '/api/lookup/',
+			'ajaxtype'       => 'lookup',
+			'ajaxcode'       => 'tariff-codes',
+			'pw_template'    => ''
+		),
+		'lookup-freight-codes' => array(
+			'template'       => 'api-ajax',
+			'name'           => 'freight-codes',
+			'title'          => 'Lookup Motor Freight Codes',
+			'summary'        => 'Lookup Motor Freight Codes',
+			'parent'         => '/api/lookup/',
+			'ajaxtype'       => 'lookup',
+			'ajaxcode'       => 'freight-codes',
+			'pw_template'    => ''
+		),
+		'lookup-msds-codes' => array(
+			'template'       => 'api-ajax',
+			'name'           => 'msds-codes',
+			'title'          => 'Lookup Msds Codes',
+			'summary'        => 'Lookup Msds Codes',
+			'parent'         => '/api/lookup/',
+			'ajaxtype'       => 'lookup',
+			'ajaxcode'       => 'msds-codes',
+			'pw_template'    => ''
+		),
+	);
+
+	public static function getModuleInfo() {
+		return array(
+			'title' => 'Dplus Online API Pages',
+			'version' => 101,
+			'summary' => 'Installs and creates Dplus Online API Pages',
+			'singular' => true,
+			'autoload' => true,
+			'requires' => array('DplusPwPages', 'Dpages'),
+		);
+	}
+}

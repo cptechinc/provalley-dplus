@@ -4,7 +4,7 @@
 
 	if ($input->get->qnbr) {
 		$qnbr = $input->get->text('qnbr');
-		$module_edit = $modules->get('QuoteEdit');
+		$module_edit = $modules->get('Eqo');
 		$module_edit->set_qnbr($qnbr);
 
 		if (QuoteQuery::create()->filterByQuoteid($qnbr)->count()) {
@@ -43,8 +43,8 @@
 
 				$page->body .= $config->twig->render('quotes/quote/edit/quote-items.twig', ['page' => $page, 'user' => $user, 'quote' => $quote_edit]);
 				$page->body .= $html->h3('class=text-secondary', 'Add Item');
-				$page->body .= $config->twig->render('quotes/quote/edit/add-item-form.twig', ['page' => $page, 'quote' => $quote_readonly]);
-				$page->js .= $config->twig->render('quotes/quote/edit/item-lookup.js.twig', ['page' => $page]);
+				$page->body .= $config->twig->render('quotes/quote/edit/lookup/form.twig', ['page' => $page, 'quote' => $quote_readonly]);
+				$page->js .= $config->twig->render('quotes/quote/edit/lookup/js.twig', ['page' => $page, 'quote' => $quote_readonly]);
 
 				if ($input->get->q) {
 					$q = $input->get->text('q');
@@ -58,7 +58,7 @@
 			//}
 
 			$page->body .= $config->twig->render("quotes/quote/quote-notes.twig", ['page' => $page, 'quote' => $quote_readonly, 'notes' => $quote_readonly->get_notes()]);
-			$page->body .= $config->twig->render('quotes/quote/notes/add-note-modal.twig', ['page' => $page, 'qnbr' => $qnbr]);
+			$page->body .= $config->twig->render('quotes/quote/notes/note-modal.twig', ['page' => $page, 'qnbr' => $qnbr]);
 			$page->body .= $config->twig->render('quotes/quote/edit/last-sales/modal.twig', ['page' => $page, 'qnbr' => $qnbr, 'lastsold' => $lastsold, 'loader' => $config->twigloader, 'company' => $config->company]);
 			$config->scripts->append(hash_templatefile('scripts/quotes/quote-notes.js'));
 			$config->scripts->append(hash_templatefile('scripts/lib/jquery-validate.js'));

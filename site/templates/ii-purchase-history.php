@@ -15,7 +15,7 @@
 			if ($module_json->file_exists(session_id(), $page->jsoncode)) {
 				if ($json['itemid'] != $itemID) {
 					$module_json->remove_file(session_id(), $page->jsoncode);
-					$session->redirect($page->get_itemquotesURL($itemID));
+					$session->redirect($page->url_itemID($itemID));
 				}
 				$session->purchasehistorytry = 0;
 
@@ -27,8 +27,8 @@
 				} else {
 					$module_formatter = $modules->get('SfIiPurchaseHistory');
 					$module_formatter->init_formatter();
-					$document_management = $modules->get('DocumentManagement');
-					$page->body .= $config->twig->render('items/ii/purchase-history/purchase-history.twig', ['page' => $page, 'itemID' => $itemID, 'json' => $json, 'module_formatter' => $module_formatter, 'blueprint' => $module_formatter->get_tableblueprint(), 'document_management' => $document_management]);
+					$docm = $modules->get('DocumentManagementPo');
+					$page->body .= $config->twig->render('items/ii/purchase-history/purchase-history.twig', ['page' => $page, 'itemID' => $itemID, 'json' => $json, 'module_formatter' => $module_formatter, 'blueprint' => $module_formatter->get_tableblueprint(), 'docm' => $docm]);
 				}
 			} else {
 				if ($session->purchasehistorytry > 3) {

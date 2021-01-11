@@ -43,6 +43,16 @@ class CodeTablesUmm extends WireData implements Module {
 	}
 
 	/**
+	 * Return the IDs for the Customer Price Code
+	 * @return array
+	 */
+	public function get_codes_ids() {
+		$q = $this->get_query();
+		$q->select(UnitofMeasureSale::get_aliasproperty('id'));
+		return $q->find()->toArray();
+	}
+
+	/**
 	 * Returns if Codes Exists
 	 * @param  string $productlne ProductLneID
 	 * @return bool
@@ -160,6 +170,8 @@ class CodeTablesUmm extends WireData implements Module {
 
 		if ($q->count()) {
 			$uom_purchase = $q->findOne();
+			$uom_purchase->setCode($uom_sale->code);
+			$uom_purchase->fromArray($uom_sale->toArray());
 		} else {
 			$uom_purchase = new UnitofMeasurePurchase();
 			$uom_purchase->setCode($uom_sale->code);

@@ -16,10 +16,24 @@
 				<i class="fa fa-eraser" aria-hidden="true"></i> Clear Cart
 			</a>
 		</div>
-		<div class="col text-right">
-			<a href="#notes" class="{{ cart.count_notes() ? 'text-success' : 'text-muted'}}" title="View Notes" aria-label="View Notes">
-				<i class="fa fa-sticky-note-o fa-2x" aria-hidden="true"></i>
-			</a>
+		<div class="col">
+			<form action="{{ page.url }}" method="get">
+				<input type="hidden" name="action" value="set-shiptoid">
+				<input type="hidden" name="custID" value="{{ customer.id }}">
+
+				<div class="row">
+					<div class="col">
+						<label for="select_shipto">Ship-to</label>
+					</div>
+					<div class="col">
+						<select name="shiptoID" class="form-control form-control-sm" id="select_shipto">
+							{% for ship in customer.get_shiptos() %}
+								<option value="{{ ship.id }}" {{ ship.id == shipto.id ? 'selected' : '' }}>{{ ship.name }}</option>
+							{% endfor %}
+						</select>
+					</div>
+				</div>
+			</form>
 		</div>
 	</div>
 </div>

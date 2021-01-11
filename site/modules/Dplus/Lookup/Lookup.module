@@ -19,14 +19,9 @@ class Lookup extends WireData implements Module {
 		}
 	}
 
-	/* =============================================================
-		ProcessWire Module Functions
-	============================================================= */
-	/**
-	 * ProcessWire Module Info
-	 *
-	 * @return void
-	 */
+/* =============================================================
+	ProcessWire Module Functions
+============================================================= */
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Lookup Module',
@@ -39,7 +34,18 @@ class Lookup extends WireData implements Module {
 				'LookupItem',
 				'LookupSalesOrder',
 				'LookupVendor',
-				'LookupQuote'
+				'LookupQuote',
+				'LookupWarehouse',
+				'ValidatePurchaseOrderNbr',
+				'ValidateSalesOrder',
+				'ValidateVendorId',
+				'ValidateAr',
+				'ValidateAp',
+				'ValidateItm',
+				'ValidatePo',
+				'ValidateCxm',
+				'ValidateVxm',
+				'ValidateUpcx',
 			)
 		);
 	}

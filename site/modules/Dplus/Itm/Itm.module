@@ -5,51 +5,59 @@ include_once(__DIR__.'/ItmResponse.php');
 use Purl\Url;
 
 use ItemMasterItemQuery, ItemMasterItem;
+use ConfigInQuery, ConfigIn;
+use InvGroupCodeQuery, InvGroupCode;
+use InvPriceCodeQuery, InvPriceCode;
+use InvCommissionCodeQuery, InvCommissionCode;
+use InvStockCodeQuery, InvStockCode;
+use InvSpecialCodeQuery, InvSpecialCode;
 
 /**
- * Module that handles the editing of the UPC item Xref
+ * Module that handles the editing of the UPC item Itm
  */
 class Itm extends WireData implements Module {
 	const MODEL              = 'ItemMasterItem';
 	const MODEL_KEY          = 'code';
 	const DESCRIPTION        = 'Item Master Item';
 	const DESCRIPTION_RECORD = 'Item Master Item';
+	const RECORDLOCKER_FUNCTION  = 'itm';
+
+	const TEMPLATES_ITM = array(
+		'itm',
+		'itm-pricing',
+		'itm-whse',
+		'itm-costing',
+		'itm-xrefs',
+		'itm-xrefs-upcx',
+		'itm-xrefs-vxm',
+		'itm-xrefs-cxm',
+		'itm-misc',
+		'itm-components',
+		'itm-kit',
+		'itm-function'
+	);
 
 	public function __construct() {
 		$this->description = self::DESCRIPTION;
+		$this->configs = new WireData();
+		$this->configs->inv = false;
 	}
 
-	public function init() {
-		$this->addHook('Page(pw_template=itm|itm-pricing)::itmURL', function($event) {
-			$itemID = $event->arguments(0);
-			$event->return = $this->get_itmURL($itemID);
-		});
-
-		$this->addHook('Page(pw_template=itm|itm-pricing)::get_itemURL', function($event) {
-			$itemID = $event->arguments(0);
-			$event->return = $this->get_itmURL($itemID);
-		});
-
-		$this->addHookProperty('Page(pw_template=itm|itm-pricing)::itemID', function($event) {
-			$p = $event->object;
-			$event->return = $p->fullURL->query->get('itemID');
-		});
-
-		$this->addHook('Page(pw_template=itm|itm-pricing)::itm_pricingURL', function($event) {
-			$itemID = $event->arguments(0);
-			$event->return = $this->get_itm_pricingURL($itemID);
-		});
-
-		$this->addHook('Page(pw_template=itm|itm-pricing)::itemIDURL', function($event) {
-			$p = $event->object;
-			$itemID = $event->arguments(0);
-			$url = new Url($p->url);
-			$url->query->set('itemID', $itemID);
-
-			$event->return = $url->getUrl();
-		});
+	public function init_configs() {
+		$this->configs->inv = $this->get_config_in();
 	}
 
+	/**
+	 * Returns ItemMasterItemQuery
+	 * @return ItemMasterItemQuery
+	 */
+	public function get_query() {
+		return ItemMasterItemQuery::create();
+	}
+
+/* =============================================================
+	CRUD Read, Validate Functions
+============================================================= */
 	/**
 	 * Return ItemMasterItem[]
 	 * @return ItemMasterItem[]|ObjectCollection
@@ -82,99 +90,240 @@ class Itm extends WireData implements Module {
 	}
 
 	/**
-	 * Returns ItemMasterItemQuery
-	 * @return ItemMasterItemQuery
-	 */
-	public function get_query() {
-		return ItemMasterItemQuery::create();
-	}
-
-	/**
 	 * Returns ItemMasterItem after retreiving or creating it
-	 * @param  WireInput $input Input Data
+	 * @param  string $itemID Item ID
 	 * @return ItemMasterItem
 	 */
-	public function get_create_item(WireInput $input) {
-		$rm = strtolower($input->requestMethod());
-		$itemID = $input->$rm->text('itemID');
-
+	public function get_create_item($itemID) {
 		if ($this->item_exists($itemID)) {
 			$record = $this->get_item($itemID);
 		} else {
-			$record = new ItemMasterItem();
+			$itemID = substr($itemID, 0, ItemMasterItem::LENGTH_ITEMID);
+			$record = $this->get_new_item();
 			$record->setItemid($itemID);
 		}
-
 		return $record;
 	}
 
 	/**
-	 * Takes Input, validates it's for one of the code tables
-	 * Processes it, and if updated sends request to dplus
-	 *
-	 * TODO:
+	 * Returns Item with Defaults Set
+	 * @return ItemMasterItem
+	 */
+	public function get_new_item() {
+		$item = new ItemMasterItem();
+		$this->init_configs();
+
+		$item->setItemgroup($this->configs->inv->default_itemgroup);
+
+		if ($this->configs->inv->use_pricegroup()) {
+			$item->setPricecode($this->configs->inv->default_pricegroup);
+		}
+
+		if ($this->configs->inv->use_commgroup()) {
+			$item->setCommissiongroup($this->configs->inv->default_commgroup);
+		}
+
+		$item->setItemtype($this->configs->inv->default_itemtype);
+
+		$item->setTaxable('Y');
+		$item->setAllow_backorder('Y');
+		$item->setAllow_discount('Y');
+		$item->setRequire_freight('N');
+		$item->setCore('N');
+		$item->setSplitorder('Y');
+
+		$item->setUom_sale($this->configs->inv->default_uom_sale);
+		$item->setUom_purchase($this->configs->inv->default_uom_purchase);
+		$item->setPreference($this->configs->inv->default_nafta_pref_code);
+		$item->setProducer($this->configs->inv->default_nafta_producer);
+		$item->setDocumentation($this->configs->inv->default_nafta_documentation);
+		$item->setBasestandardcost($this->configs->inv->default_base_standard_cost);
+
+		if ($this->wire('modules')->get('DplusCustomer')->get_custID() == 'LINDST') {
+			$item->setStockcode('MM');
+		}
+		return $item;
+	}
+
+/* =============================================================
+	CRUD Processing Functions
+============================================================= */
+	/**
+	 * Takes Input, processses the action, calls the process_input
 	 *
 	 * @param  WireInput $input Input
 	 * @return void
 	 */
 	public function process_input(WireInput $input) {
 		$rm = strtolower($input->requestMethod());
-		$upc = $input->$rm->text('upc');
-		$itemID = $input->$rm->text('itemID');
+		$values = $input->$rm;
 
-		$record = $this->get_create_upc($input);
-
-		if ($input->$rm->text('action') == 'remove-upc-item') {
-			$record->delete();
-		} elseif ($input->$rm->text('action') == 'update-itm') {
-			$record->setQty($input->$rm->int('qty'));
-			$record->setUom($input->$rm->text('uom'));
-			$record->setMastercase($input->$rm->text('mastercase'));
-			$record->setNeedslabel($input->$rm->text('needslabel'));
-			$record->setDate(date('Ymd'));
-			$record->setTime(0);
-
-			if ($input->$rm->text('primary') == ItemMasterItem::PRIMARY_TRUE) {
-				if ($input->$rm->text('valid_primary') == 'true') {
-					$record->setPrimary(ItemMasterItem::PRIMARY_TRUE);
-				}
-			} else {
-				$record->setPrimary(ItemMasterItem::PRIMARY_FALSE);
-			}
-		}
-
-		if ($input->$rm->action) {
-			$response = $this->save_and_process_response($record);
-
-			/**
-			 * IF we saved this Item as the Primary PO ORDER then we have to update
-			 * the other primary item to be a secondary
-			 */
-			if ($response->has_success() && !$record->isDeleted()) {
-				if ($record->is_primary() && $record->get_primary_upc_code()) {
-					$primary_upc = $record->get_primary_upc();
-					$primary_upc->setPrimary(ItemMasterItem::PRIMARY_FALSE);
-					$primary_upc->save();
-					$this->update_dplus_cobol($primary_upc);
-				}
-			}
-			$this->wire('session')->response_xref = $response;
+		switch ($values->text('action')) {
+			case 'update-notes':
+			case 'delete-notes':
+				$qnotes = $this->wire('modules')->get('QnotesItem');
+				$qnotes->process_input($input);
+				break;
+			default:
+				$this->process_input_itm($input);
+				break;
 		}
 	}
 
 	/**
-	 * Returns XrefResponse based on the outcome of the database save
-	 * @param  ItemMasterItem $record Record to record response of database save
-	 * @return XrefResponse
+	 * Takes Input, validates it's for an Item
+	 * Updates Item
+	 * Processes it, and if updated sends request to dplus
+	 *
+	 * @param  WireInput $input Input
+	 * @return void
 	 */
-	protected function save_and_process_response(ItemMasterItem $record) {
+	public function process_input_itm(WireInput $input) {
+		$this->init_configs();
+		$rm = strtolower($input->requestMethod());
+		$values = $input->$rm;
+		$itemID = strtoupper($values->text('itemID'));
+		$record = $this->get_create_item($itemID);
+		$invalidfields = array();
+
+		/**
+		 * Create lock for ITM item ID if not already locked.
+		 */
+		if (!$this->recordlocker->function_locked($itemID)) {
+			$this->recordlocker->create_lock($itemID);
+		}
+
+		if ($record->isNew() || $this->recordlocker->function_locked_by_user($itemID)) {
+			if ($values->text('action') == 'delete-itm-item') {
+				$record->delete();
+			} elseif ($values->text('action') == 'update-itm') {
+				$invalidfields = $this->set_item_fields($record, $input);
+			}
+
+			if ($values->action) {
+				$response = $this->save_and_respond($record, $invalidfields);
+
+				if ($invalidfields) {
+					$response->set_error(true);
+					$response->set_success(false);
+					$response->set_saved_itm(false);
+					$response->set_message("$itemID was not saved to Dplus");
+				} else {
+					$response->set_saved_itm($response->success);
+				}
+
+				if ($values->text('action') == 'delete-itm-item') {
+					$response = $this->verify_delete($itemID);
+				}
+			} else {
+				$message = self::DESCRIPTION_RECORD . " ($record->itemid) was not saved, no action was specified";
+				$response = ItmResponse::response_error($record->itemid, $message);
+			}
+		} else {
+			$message = self::DESCRIPTION_RECORD . " ($record->itemid)  was not saved, it is locked by " . $this->recordlocker->get_locked_user($itemID);
+			$response = ItmResponse::response_error($record->itemid, $message);
+		}
+		$this->wire('session')->response_itm = $response;
+	}
+
+	/**
+	 * Sets Item Values
+	 * @param ItemMasterItem $record Item Master Item
+	 * @param WireInput      $input  Input Data
+	 */
+	protected function set_item_fields(ItemMasterItem $record, WireInput $input) {
+		$rm = strtolower($input->requestMethod());
+		$values = $input->$rm;
+		$invalidfields = array();
+		$record->setDescription($values->text('description'));
+		$record->setDescription2($values->text('description2'));
+		$record->setRevision($values->text('revision'));
+		$record->setTimefence($values->text('itemfence'));
+		$record->setQtypercase($values->int('qtypercase'));
+
+		$record->setAllow_backorder($values->yn('allow_backorder'));
+		$record->setSplitorder($values->yn('splitorder'));
+		$record->setInspection($values->yn('inspection'));
+		$record->setTaxable($values->yn('taxable'));
+		$record->setWeight($values->float('weight'));
+		$record->setCubes($values->float('cubes'));
+		$invalidfields = $this->set_validated_fields($record, $input);
+		return $invalidfields;
+	}
+
+	/**
+	 * Updates the fields that need to be validated against a table
+	 * @param  ItemMasterItem $record Item
+	 * @param  WireInput      $input  Input Values
+	 * @return array                  Invalid Input fields, empty if none
+	 */
+	protected function set_validated_fields(ItemMasterItem $record, WireInput $input) {
+		$invalid = array();
+		$fields = array(
+			'custid' => array(
+				'description' => 'Cust ID',
+				'input'       => 'custid',
+				'allow_blank' => true
+			),
+			'itemtype' => array(
+				'description' => 'Item Type',
+				'input'       => 'itemtype',
+				'allow_blank' => false
+			),
+			'stockcode' => array(
+				'description' => 'Stock Code',
+				'input'       => 'stockcode',
+				'allow_blank' => true
+			),
+			'itemgroup' => array(
+				'description' => 'Item Group',
+				'input'       => 'itemgroup',
+				'allow_blank' => false
+			),
+			'specialitem' => array(
+				'description' => 'Special Item Code',
+				'input'       => 'specialitemcode',
+				'allow_blank' => true
+			),
+		);
+
+		if ($this->configs->inv->use_pricegroup()) {
+			$fields['pricecode'] = array(
+				'description' => 'Price Code',
+				'input'       => 'pricecode',
+				'allow_blank' => true
+			);
+		}
+		if ($this->configs->inv->use_commgroup()) {
+			$fields['commissiongroup'] = array(
+				'description' => 'Comission Group',
+				'input'       => 'commissiongroup',
+				'allow_blank' => true
+			);
+		}
+		$validator = $this->wire('modules')->get('InputValidator');
+		$validator->set_validator($this->wire('modules')->get('ValidateItm'))->set_input($input)->set_record($record)->set_validatefields($fields);
+		$invalid = $validator->validate();
+		$validator->set_valid_properties();
+		return $invalid;
+	}
+
+/* =============================================================
+	CRUD Response Functions
+============================================================= */
+	/**
+	 * Returns ItmResponse based on the outcome of the database save
+	 * @param  ItemMasterItem $record        Record to record response of database save
+	 * @param  array          $invalidfields Input fields that require attention
+	 * @return ItmResponse
+	 */
+	protected function save_and_respond(ItemMasterItem $record, array $invalidfields) {
 		$is_new = $record->isDeleted() ? false : $record->isNew();
 		$saved  = $record->isDeleted() ? $record->isDeleted() : $record->save();
-		$code = "$record->upc";
 
-		$response = new XrefResponse();
-		$response->set_key($code);
-		$message = self::DESCRIPTION_RECORD . " ($code) was ";
+		$response = new ItmResponse();
+		$response->set_itemID($record->itemid);
+		$message = self::DESCRIPTION_RECORD . " ($record->itemid) was ";
 
 		if ($saved) {
 			$response->set_success(true);
@@ -185,23 +334,213 @@ class Itm extends WireData implements Module {
 
 		if ($is_new) {
 			$message .= 'added';
-			$response->set_action(XrefResponse::CRUD_CREATE);
+			$response->set_action(ItmResponse::CRUD_CREATE);
 		} elseif ($record->isDeleted()) {
 			$message .= 'deleted';
-			$response->set_action(XrefResponse::CRUD_DELETE);
+			$response->set_action(ItmResponse::CRUD_DELETE);
 		} else {
 			$message .= 'updated';
-			$response->set_action(XrefResponse::CRUD_UPDATE);
+			$response->set_action(ItmResponse::CRUD_UPDATE);
 		}
 
 		$response->set_message($message);
 
-		if ($response->has_success()) {
-			$this->update_dplus_cobol($record);
+		if ($response->has_success() && empty($invalidfields)) {
+			if ($record->isDeleted()) {
+				$this->request_item_delete($record->itemid);
+			} else {
+				$this->request_item_update($record->itemid);
+			}
 		}
+		$response->set_fields($invalidfields);
 		return $response;
 	}
 
+/* =============================================================
+	Dplus Cobol Request Functions
+============================================================= */
+	private function request_dplus(array $data) {
+		$config = $this->wire('config');
+		$dplusdb = $this->wire('modules')->get('DplusDatabase')->db_name;
+		$data = array_merge(["DBNAME=$dplusdb"], $data);
+		$requestor = $this->wire('modules')->get('DplusRequest');
+		$requestor->write_dplusfile($data, session_id());
+		$requestor->cgi_request($config->cgis['database'], session_id());
+	}
+	/**
+	 * Writes File for Dplus to update the ITM file for this ITEM
+	 * @param  string $itemID Item ID
+	 * @return void
+	 */
+	public function request_item_update($itemID) {
+		$data = array('UPDATEITM', "ITEMID=$itemID");
+		$this->request_dplus($data);
+	}
+
+	/**
+	 * Writes File for Dplus to delete the ITM file for this ITEM
+	 * @param  string $itemID Item ID
+	 * @return void
+	 */
+	private function request_item_delete($itemID, $debug = false) {
+		$data = array('DELETEITM', "ITEMID=$itemID");
+		$this->request_dplus($data);
+	}
+
+	/**
+	 * Return if Item was able to be deleted
+	 * @param  string $itemID Item ID
+	 * @return bool
+	 */
+	private function verify_delete($itemID) {
+		$m_json = $this->wire('modules')->get('JsonDataFiles');
+		$json = $m_json->get_file(session_id(), 'itm-delete');
+		$response = new ItmResponse();
+		$response->set_itemID($itemID);
+		$response->set_action(ItmResponse::CRUD_DELETE);
+		$message = self::DESCRIPTION_RECORD . " ($itemID) was ";
+
+		if ($m_json->had_succeeded()) {
+			if ($json['itemid'] != $itemID) {
+				$response->set_error(true);
+				$message .= "not deleted";
+			} elseif ($json['error'] === true) {
+				$response->set_error(true);
+				$message .= "not deleted";
+			} else {
+				$response->set_success(true);
+				$message .= "deleted";
+			}
+		} else {
+			$response->set_error(true);
+			$message .= "not deleted";
+		}
+
+		if ($json['error']) {
+			$message .= " Error: " . $json['errormsg'];
+		}
+		$response->set_message($message);
+		return $response;
+	}
+
+/* =============================================================
+	Supplemental Functions
+============================================================= */
+	/**
+	 * Returns IN config
+	 * @return ConfigIn
+	 */
+	public function get_config_in() {
+		return ConfigInQuery::create()->findOne();
+	}
+
+	/**
+	 * Return Item Groups
+	 * @return InvGroupCode[]|ObjectCollection
+	 */
+	public function get_itemgroups() {
+		return InvGroupCodeQuery::create()->find();
+	}
+
+	/**
+	 * Return Price Codes
+	 * @return InvPriceCode[]|ObjectCollection
+	 */
+	public function get_pricecodes() {
+		return InvPriceCodeQuery::create()->find();
+	}
+
+	/**
+	 * Return Commission Codes
+	 * @return InvCommissionCode[]|ObjectCollection
+	 */
+	public function get_commissoncodes() {
+		return InvCommissionCodeQuery::create()->find();
+	}
+
+	/**
+	 * Return Stock Codes
+	 * @return InvStockCode[]|ObjectCollection
+	 */
+	public function get_stockcodes() {
+		return InvStockCodeQuery::create()->find();
+	}
+
+	/**
+	 * Return Stock Codes
+	 * @return InvSpecialCode[]|ObjectCollection
+	 */
+	public function get_speicialitemcodes() {
+		return InvSpecialCodeQuery::create()->find();
+	}
+
+	/**
+	 * Return if Field has Error
+	 * NOTE: Uses $session->response_itm->fields to derive this
+	 * @param  string $inputname Input name e.g. commissiongroup
+	 * @return bool
+	 */
+	public function field_has_error($inputname) {
+		$response = $this->wire('session')->response_itm;
+		return ($response) ? array_key_exists($inputname, $response->fields) : false;
+	}
+
+/* =============================================================
+	Item Functions
+============================================================= */
+	/**
+	 * Return if Item Type for Item ID is normal (N)
+	 * @param  string $itemID Item ID
+	 * @return bool
+	 */
+	public function is_item_normal($itemID) {
+		$q = $this->get_query();
+		return $q->is_item_normal($itemID);
+	}
+
+	/**
+	 * Return if Item Type for Item ID is lotted (L)
+	 * @param  string $itemID Item ID
+	 * @return bool
+	 */
+	public function is_item_lotted($itemID) {
+		$q = $this->get_query();
+		return $q->is_item_lotted($itemID);
+	}
+
+	/**
+	 * Return if Item Type for Item ID is serialized (S)
+	 * @param  string $itemID Item ID
+	 * @return bool
+	 */
+	public function is_item_serialized($itemID) {
+		$q = $this->get_query();
+		return $q->is_item_serialized($itemID);
+	}
+
+	/**
+	 * Return if Item Type for Item ID is lotted (S) or lotted (L)
+	 * @param  string $itemID Item ID
+	 * @return bool
+	 */
+	public function is_item_lotserialized($itemID) {
+		$q = $this->get_query();
+		return ($q->is_item_serialized($itemID) || $this->is_item_lotted($itemID));
+	}
+
+	/**
+	 * Return if Item Type for Item ID is Price Only(P)
+	 * @param  string $itemID Item ID
+	 * @return bool
+	 */
+	public function is_item_priceonly($itemID) {
+		$q = $this->get_query();
+		return $q->is_item_priceonly($itemID);
+	}
+
+/* =============================================================
+	URL Functions
+============================================================= */
 	/**
 	 * Return URL to view / edit Item
 	 * @param  string $itemID
@@ -209,6 +548,18 @@ class Itm extends WireData implements Module {
 	 */
 	public function get_itmURL($itemID) {
 		$url = new Url($this->wire('pages')->get("pw_template=itm")->url);
+		$url->query->set('itemID', $itemID);
+		return $url->getUrl();
+	}
+
+	/**
+	 * Return URL to view / edit Item
+	 * @param  string $itemID
+	 * @return string
+	 */
+	public function get_itm_deleteURL($itemID) {
+		$url = new Url($this->wire('pages')->get("pw_template=itm")->url);
+		$url->query->set('action', 'delete-itm-item');
 		$url->query->set('itemID', $itemID);
 		return $url->getUrl();
 	}
@@ -225,20 +576,99 @@ class Itm extends WireData implements Module {
 	}
 
 	/**
-	 * Writes File for Dplus to update the ITM file for this ITEM
-	 * @param  string $itemID Item ID
-	 * @return void
+	 * Return URL to view / edit Item Warehouse
+	 * @param  string $itemID
+	 * @param  string $whseID
+	 * @return string
 	 */
-	public function update_dplus_cobol($itemID) {
-		$config = $this->wire('config');
-		$dplusdb = $this->wire('modules')->get('DplusConnectDatabase')->db_name;
-		$data = array("DBNAME=$dplusdb", 'UPDATEITM', "ITEMID=$itemID");
-
-		$requestor = $this->wire('modules')->get('DplusRequest');
-		$requestor->write_dplusfile($data, session_id());
-		$requestor->cgi_request($config->cgis['database'], session_id());
+	public function get_itm_warehouseURL($itemID, $whseID) {
+		$url = new Url($this->wire('pages')->get("pw_template=itm-whse")->url);
+		$url->query->set('itemID', $itemID);
+		$url->query->set('whseID', $whseID);
+		return $url->getUrl();
 	}
 
+	/**
+	 * Return URL to view / edit Item Warehouse
+	 * @param  string $itemID
+	 * @param  string $whseID
+	 * @return string
+	 */
+	public function get_itm_warehouse_deleteURL($itemID, $whseID) {
+		$url = new Url($this->wire('pages')->get("pw_template=itm-whse")->url);
+		$url->query->set('action', 'remove-itm-whse');
+		$url->query->set('itemID', $itemID);
+		$url->query->set('whseID', $whseID);
+		return $url->getUrl();
+	}
+
+	/**
+	 * Return URL to view / edit Item Costing
+	 * @param  string $itemID
+	 * @return string
+	 */
+	public function get_itm_costingURL($itemID) {
+		$url = new Url($this->wire('pages')->get("pw_template=itm-costing")->url);
+		$url->query->set('itemID', $itemID);
+		return $url->getUrl();
+	}
+
+	/**
+	 * Return URL to view / edit Item Misc
+	 * @param  string $itemID
+	 * @return string
+	 */
+	public function get_itm_miscURL($itemID) {
+		$url = new Url($this->wire('pages')->get("pw_template=itm-misc")->url);
+		$url->query->set('itemID', $itemID);
+		return $url->getUrl();
+	}
+
+	/**
+	 * Return URL to view / edit Item Kit
+	 * @param  string $itemID
+	 * @return string
+	 */
+	public function get_itm_kitURL($itemID) {
+		$url = new Url($this->wire('pages')->get("pw_template=itm-kit")->url);
+		$url->query->set('itemID', $itemID);
+		return $url->getUrl();
+	}
+
+	/**
+	 * Return URL to view / edit Item Xrefs
+	 * @param  string $itemID
+	 * @return string
+	 */
+	public function get_itm_xrefsURL($itemID) {
+		$url = new Url($this->wire('pages')->get("pw_template=itm-xrefs")->url);
+		$url->query->set('itemID', $itemID);
+		return $url->getUrl();
+	}
+
+	/**
+	 * Return URL to view / edit Item Xrefs
+	 * @param  string $itemID
+	 * @return string
+	 */
+	public function get_itm_validateURL() {
+		$url = new Url($this->wire('pages')->get("pw_template=itm-validate")->url);
+		return $url->getUrl();
+	}
+
+	/**
+	 * Return URL to view / edit Item Xrefs
+	 * @param  string $itemID
+	 * @return string
+	 */
+	public function get_itm_jsonURL() {
+		$url = new Url($this->wire('pages')->get("pw_template=itm-json")->url);
+		return $url->getUrl();
+	}
+
+/* =============================================================
+	ProcessWire Module Functions
+============================================================= */
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Dplus ITM CRUD Manager',
@@ -246,6 +676,174 @@ class Itm extends WireData implements Module {
 			'summary' => 'Module for CRUD Methods for ITM',
 			'singular' => true,
 			'autoload' => true,
+			'installs' => array(
+				'ItmCosting',
+				'ItmPricing',
+				'ItmWarehouse',
+				'ItmXrefs',
+				'ItmMisc',
+				'ItmHazmat',
+			)
 		);
+	}
+
+	public function update() {
+		$info = self::getModuleInfo();
+		$modules = $this->wire('modules');
+		$modules->refresh();
+
+		foreach ($info['installs'] as $module_name) {
+			$modules->install($module_name);
+		}
+	}
+
+	/**
+	 * Set up Functions / Properties for pw_templated pages
+	 * @return void
+	 */
+	public function init() {
+		$this->recordlocker = $this->wire('modules')->get('RecordLockerUserFunction');
+		$this->recordlocker->set_function(self::RECORDLOCKER_FUNCTION);
+
+		$templates = implode('|', self::TEMPLATES_ITM);
+		
+		$this->addHook("Page(pw_template=$templates)::itmURL", function($event) {
+			$itemID = $event->arguments(0);
+			$event->return = $this->get_itmURL($itemID);
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_validateURL", function($event) {
+			$event->return = $this->get_itm_validateURL();
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_deleteURL", function($event) {
+			$itemID = $event->arguments(0);
+			$event->return = $this->get_itm_deleteURL($itemID);
+		});
+
+		$this->addHook("Page(pw_template=$templates)::get_itemURL", function($event) {
+			$itemID = $event->arguments(0);
+			$event->return = $this->get_itmURL($itemID);
+		});
+
+		$this->addHookProperty("Page(pw_template=$templates)::itemID", function($event) {
+			$p = $event->object;
+			$event->return = $p->fullURL->query->get('itemID');
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_pricingURL", function($event) {
+			$itemID = $event->arguments(0);
+			$event->return = $this->get_itm_pricingURL($itemID);
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_warehouseURL", function($event) {
+			$itemID = $event->arguments(0);
+			$whseID = $event->arguments(1);
+			$event->return = $this->get_itm_warehouseURL($itemID, $whseID);
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_warehouse_deleteURL", function($event) {
+			$itemID = $event->arguments(0);
+			$whseID = $event->arguments(1);
+			$event->return = $this->get_itm_warehouse_deleteURL($itemID, $whseID);
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_costingURL", function($event) {
+			$itemID = $event->arguments(0);
+			$event->return = $this->get_itm_costingURL($itemID);
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_miscURL", function($event) {
+			$itemID = $event->arguments(0);
+			$event->return = $this->get_itm_miscURL($itemID);
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_kitURL", function($event) {
+			$itemID = $event->arguments(0);
+			$event->return = $this->get_itm_kitURL($itemID);
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_xrefsURL", function($event) {
+			$itemID = $event->arguments(0);
+			$event->return = $this->get_itm_xrefsURL($itemID);
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_validateURL", function($event) {
+			$event->return = $this->get_itm_validateURL();
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itm_jsonURL", function($event) {
+			$event->return = $this->get_itm_jsonURL();
+		});
+
+		$this->addHook("Page(pw_template=$templates)::itemIDURL", function($event) {
+			$p = $event->object;
+			$itemID = $event->arguments(0);
+			$url = new Url($p->url);
+			$url->query->set('itemID', $itemID);
+			$event->return = $url->getUrl();
+		});
+
+		$this->addHookProperty("Page(pw_template=$templates)::lockcode", function($event) {
+			$p = $event->object;
+			$lockcode = $p->pw_template;
+
+			switch ($p->pw_template) {
+				case 'itm-xrefs':
+				case 'itm-costing':
+				case 'itm-pricing':
+					$lockcode = 'itm';
+					break;
+				case 'itm-xrefs-upcx':
+					$lockcode = 'upcx';
+					break;
+				default:
+					$lockcode = $p->pw_template;
+			}
+			$event->return = $lockcode;
+		});
+
+		$this->addHookProperty("Page(pw_template=$templates)::itemlookupURL", function($event) {
+			$event->return = $this->wire('pages')->get('pw_template=itm-search')->url;
+		});
+
+		$this->addHook('Page(pw_template=itm-search)::get_itemURL', function($event) {
+			$p = $event->object;
+			$itemID = $event->arguments(0);
+			$url = new Url($this->wire('pages')->get('pw_template=itm')->url);
+			$url->query->set('itemID', $itemID);
+			$event->return = $url->getUrl();
+		});
+
+		$this->addHookProperty("Page(pw_template=$templates)::itemID", function($event) {
+			$p = $event->object;
+			$event->return = $p->fullURL->query->get('itemID');
+		});
+
+		$this->addHookProperty("Page(pw_template=$templates)::search_notesURL", function($event) {
+			$event->return = $this->wire('pages')->get('pw_template=msa-noce-ajax')->url;
+		});
+
+		$this->addHookProperty("Page(pw_template=$templates)::search_countriesURL", function($event) {
+			$event->return = $this->wire('pages')->get('pw_template=lookup-country-codes')->url;
+		});
+
+		$this->addHookProperty("Page(pw_template=$templates)::search_tariffcodesURL", function($event) {
+			$event->return = $this->wire('pages')->get('template=api-ajax,ajaxcode=tariff-codes')->url;
+		});
+
+		$this->addHookProperty("Page(pw_template=$templates)::search_msdscodesURL", function($event) {
+			$event->return = $this->wire('pages')->get('template=api-ajax,ajaxcode=msds-codes')->url;
+		});
+
+		$this->addHookProperty("Page(pw_template=$templates)::search_freightcodesURL", function($event) {
+			$event->return = $this->wire('pages')->get('template=api-ajax,ajaxcode=freight-codes')->url;
+		});
+
+		$this->addHook("Page(pw_template=$templates)::jsonapiURL", function($event) {
+			$api = $event->arguments(0);
+			$pages = $this->wire('pages');
+			$event->return = $api ? $pages->get("template=dplus-json,name=$api")->httpUrl : $pages->get("template=api-menu,name=json")->httpUrl;
+		});
 	}
 }

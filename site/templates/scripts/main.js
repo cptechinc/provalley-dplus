@@ -81,10 +81,10 @@ $(function() {
 		e.preventDefault();
 		var button = $(this);
 		var uri = new URI(button.attr('href'));
-		swal({
+		swal2.fire({
 			title: 'Select Action Type',
 			input: 'select',
-			type: 'question',
+			icon: 'question',
 			confirmButtonClass: 'btn btn-sm btn-success',
 			cancelButtonClass: 'btn btn-sm btn-danger',
 			inputClass: 'form-control',
@@ -96,19 +96,18 @@ $(function() {
 			inputPlaceholder: 'Select an Action Type',
 			showCancelButton: true,
 			inputValidator: (value) => {
-				return new Promise(function (resolve, reject) {
+				return new Promise((resolve) => {
 					if (value.length) {
 						resolve();
 					} else {
-						reject('You need to select an Action Type')
+						resolve('You need to select an Action Type')
 					}
-				});
-
+				})
 			}
 		}).then(function (result) {
-			uri.addQuery('type', result);
+			uri.addQuery('type', result.value);
 			window.location.href = uri.toString();
-		}).catch(swal.noop);
+		});
 	});
 
 	$.notifyDefaults({
@@ -145,21 +144,47 @@ $(function() {
 	$('a.delete_button').click(function(e){
 		e.preventDefault();
 		var link = $(this);
+		var title = "Confirm Deletion"
+		var text = 'Are you sure?';
 
-		swal({
-			title: "Confirm Deletion",
-			text: "Are you sure you want to delete?",
-			type: 'warning',
+		if (link.data('delete').length) {
+			text = 'Delete ' + link.data('delete') + '?';
+		}
+
+		swal2.fire({
+			title: title,
+			text: text,
+			icon: 'warning',
 			showCancelButton: true,
-			confirmButtonClass: 'btn btn-success',
-			cancelButtonClass: 'btn btn-danger',
-			buttonsStyling: false,
-			confirmButtonText: 'Yes'
-		}).then(function (result) {
-			if (result) {
+			confirmButtonText: 'Yes',
+			cancelButtonText: 'No',
+			focusCancel: true,
+		}).then((result) => {
+			if (result.value) {
 				window.location.href = link.attr('href');
 			}
-		}).catch(swal.noop);
+		});
+	});
+
+	$('button.delete_button').click(function(e) {
+		e.preventDefault();
+		var button = $(this);
+		var action = $('.modal-form').attr("action");
+
+		swal2.fire({
+			title: "Confirm Deletion",
+			text: "Are you sure?",
+			icon: 'warning',
+			showCancelButton: true,
+			confirmButtonText: 'Yes',
+			cancelButtonText: 'No',
+			focusCancel: true,
+		}).then((confirm) => {
+			if (confirm.value) {
+				button.closest('form').submit();
+				window.location.href = action;
+			}
+		});
 	});
 });
 
@@ -243,8 +268,19 @@ $.fn.extend({
 				modal_dialog.addClass(modal_size);
 			}
 		}
+	},
+	clearValidation: function(){
+		var v = $(this).validate();
+		$('[name]',this).each(function(){
+			v.successList.push(this);
+			v.showErrors();
+		});
+		v.resetForm();
+		v.reset();
 	}
 });
+
+
 
 function toggle_nav() {
 	$(nav).toggle();
@@ -264,20 +300,20 @@ $('a.delete_button').click(function(e){
 	e.preventDefault();
 	var link = $(this);
 
-	swal({
+	swal2.fire({
 		title: "Confirm Deletion",
 		text: "Are you sure you want to delete?",
-		type: 'warning',
+		icon: 'warning',
 		showCancelButton: true,
 		confirmButtonClass: 'btn btn-success',
 		cancelButtonClass: 'btn btn-danger',
 		buttonsStyling: false,
 		confirmButtonText: 'Yes'
-	}).then(function (result) {
-		if (result) {
+	}).then((result) => {
+		if (result.value) {
 			window.location.href = link.attr('href');
 		}
-	}).catch(swal.noop);
+	});
 });
 
 /*==============================================================
@@ -321,10 +357,24 @@ Number.prototype.formatMoney = function(c, d, t) {
 		i = String(parseInt(n = Math.abs(Number(n) || 0).toFixed(c))),
 		j = (j = i.length) > 3 ? j % 3 : 0;
 		return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
- };
+};
+
+Number.prototype.truncate = function(precision) {
+	var number = this;
+	var array = number.toString().split(".");
+	array.push(array.pop().substring(0, precision));
+	var trimmed =  array.join(".");
+	return trimmed;
+}
 
 String.prototype.capitalize = function() {
 	return this.charAt(0).toUpperCase() + this.slice(1)
+}
+
+String.prototype.urlencode = function() {
+	var string = this;
+	string = string.replace('!', '%21')
+	return encodeURIComponent(string);
 }
 
 Array.prototype.contains = function ( needle ) {
@@ -333,3 +383,18 @@ Array.prototype.contains = function ( needle ) {
 	}
 	return false;
 }
+
+// CREATE DEFAULT SWEET ALERT
+const swal2 = Swal.mixin({
+	customClass: {
+		confirmButton: 'btn btn-success mr-3',
+		cancelButton: 'btn btn-danger',
+		inputClass: 'form-control',
+		selectClass: 'form-control',
+	},
+	buttonsStyling: false,
+	cancelButtonText: 'No',
+	confirmButtonText: 'Yes',
+	focusConfirm: false,
+	focusCancel: true,
+})

@@ -1,0 +1,53 @@
+{#
+	****************************************************
+		Fields: liters, weight, grams, cubes
+	****************************************************
+
+	var                    Description / Instance of
+	-------------------------------------------------
+	page                   ProcessWire\Page
+	item                   ItemMasterItem
+	itm                    module Itm
+	recordlocker           module RecordLockerUser
+#}
+{% if itm.configs.inv.use_liters() %}
+	<div class="form-group row">
+		<div class="col-sm-6">
+			<label for="liters">Liters</label>
+		</div>
+		<div class="col-sm-6">
+			<input type="number" name="liters" class="form-control form-control-sm text-right" value="{{ item.liters }}" id="liters">
+		</div>
+	</div>
+{% endif %}
+<div class="form-group row">
+	<div class="col-sm-4">
+		<label for="weight">Weight</label>
+	</div>
+	<div class="col-sm-8">
+		<div class="input-group input-group-sm">
+			<input type="number" name="weight" class="form-control text-right" value="{{ item.weight }}" id="weight">
+			<span class="input-group-append">
+				<span class="input-group-text" id="basic-addon2">{{ item.unitofmsale.id }}</span>
+			</span>
+		</div>
+	</div>
+</div>
+{% if itm.configs.inv.use_grams() %}
+	<div class="form-group row">
+		<div class="col-sm-6">
+
+		</div>
+		<div class="col-sm-6 text-right">
+			{{ item.calculate_grams()|number_format }}g
+		</div>
+	</div>
+{% endif %}
+<div class="form-group row">
+	<div class="col-sm-6">
+		<label for="cubes">Cubes</label>
+	</div>
+	<div class="col-sm-6">
+		<input type="number" name="cubes" class="form-control form-control-sm text-right" value="{{ item.cubes }}" id="cubes">
+	</div>
+</div>

@@ -16,7 +16,6 @@ use WarehouseInventoryQuery, WarehouseInventory;
  * @property string $source  itm|cxm
  */
 class LookupItemEntry extends LookupItem implements Module {
-
 	public function __construct() {
 		parent::__construct();
 		$this->message = '';
@@ -32,7 +31,7 @@ class LookupItemEntry extends LookupItem implements Module {
 	 */
 	public function lookup_input(WireInput $input) {
 		$itemID = $input->get->itemID ? $input->get->text('itemID') : $input->get->text('q');
-
+		$itemID = strtoupper($itemID);
 		$custID = $input->get->text('custID');
 		$shiptoID = $input->get->text('shiptoID');
 
@@ -56,7 +55,6 @@ class LookupItemEntry extends LookupItem implements Module {
 		if ($this->exists) {
 			$this->validate_active($custID, $shiptoID);
 		}
-
 		return $this->data;
 	}
 
@@ -79,25 +77,32 @@ class LookupItemEntry extends LookupItem implements Module {
 	 * @return void
 	 */
 	private function validate_active($custID, $shiptoID = '') {
-		if ($shiptoID) {
-			$q = CustomerShiptoQuery::create();
-			$shipto = $q->filterByCustid($custID)->filterByShiptoid($shiptoID)->findOne();
-			$warehouse = $shipto->warehouse;
+		$validate_custid = $this->wire('modules')->get('LookupCustomer');
+
+		if ($validate_custid->lookup_customer($custID)) {
+			if ($shiptoID) {
+				$q = CustomerShiptoQuery::create();
+				$shipto = $q->filterByCustid($custID)->filterByShiptoid($shiptoID)->findOne();
+				$warehouse = $shipto->warehouse;
+			} else {
+				$q = CustomerQuery::create();
+				$customer = $q->filterByCustid($custID)->findOne();
+				$warehouse = $customer->warehouse;
+			}
+
+			$q = WarehouseInventoryQuery::create();
+			$q->select(WarehouseInventory::get_aliasproperty('status'));
+			$q->filterByWarehouseid($warehouse);
+			$q->filterByItemid($this->itemID);
+			$status = $q->findOne();
+
+			if (!$status == WarehouseInventory::STATUS_ACTIVE) {
+				$this->exists = false;
+				$this->message = 'Item is not active';
+			}
 		} else {
-			$q = CustomerQuery::create();
-			$customer = $q->filterByCustid($custID)->findOne();
-			$warehouse = $customer->warehouse;
-		}
-
-		$q = WarehouseInventoryQuery::create();
-		$q->select(WarehouseInventory::get_aliasproperty('status'));
-		$q->filterByWarehouseid($warehouse);
-		$q->filterByItemid($this->itemID);
-		$status = $q->findOne();
-
-		if (!$status == WarehouseInventory::STATUS_ACTIVE) {
 			$this->exists = false;
-			$this->message = 'Item is not active';
+			$this->message = "$custID does not exist";
 		}
 	}
 

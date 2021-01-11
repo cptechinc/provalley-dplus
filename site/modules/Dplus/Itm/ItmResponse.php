@@ -1,19 +1,48 @@
 <?php namespace ProcessWire;
 
+/**
+ * ItmResponse
+ * Handles Response Data for Itm functions
+ *
+ * @author Paul Gomez
+ *
+ * @property bool    $success            Did the function Succeed?
+ * @property bool    $error              Was there an error?
+ * @property bool    $message            Error Message / Success Message
+ * @property string  $itemID             Item ID
+ * @property string  $whseID             Warehouse ID  ** Only for itm-whse
+ * @property int     $action             1 = CREATE | 2 = UPDATE | 3 = DELETE
+ * @property bool    $saved_itm          Was ITM record Updated?
+ * @property bool    $saved_itm_whse     Was ITM Warehouse record Updated?
+ * @property bool    $saved_itm_pricing  Was ITM Pricing record Updated?
+ * @property bool    $saved_itm_costing  Was ITM Pricing record Updated?
+ * @property array   $fields             Key-Value array of fields that need attention
+ *
+ */
 class ItmResponse extends WireData {
 
 	const CRUD_CREATE = 1;
 	const CRUD_UPDATE = 2;
 	const CRUD_DELETE = 3;
 
+	const CRUD_DESCRIPTION = [
+		1 => 'created',
+		2 => 'updated',
+		3 => 'deleted'
+	];
+
 	public function __construct() {
 		$this->success = false;
 		$this->error = false;
 		$this->message = '';
 		$this->itemID = '';
+		$this->whseID = '';
 		$this->action = 0;
 		$this->saved_itm = false;
 		$this->saved_itm_pricing = false;
+		$this->saved_itm_whse = false;
+		$this->saved_itm_costing = false;
+		$this->fields = array();
 	}
 
 	public function set_action(int $action = 0) {
@@ -44,11 +73,59 @@ class ItmResponse extends WireData {
 		$this->itemID = $itemID;
 	}
 
+	public function set_whseID($whseID) {
+		$this->whseID = $whseID;
+	}
+
 	public function set_saved_itm(bool $saved) {
 		$this->saved_itm = $saved;
 	}
 
 	public function set_saved_itm_pricing(bool $saved) {
 		$this->saved_itm_pricing = $saved;
+	}
+
+	public function set_saved_itm_whse(bool $saved) {
+		$this->saved_itm_whse = $saved;
+	}
+
+	public function set_saved_itm_costing(bool $saved) {
+		$this->saved_itm_costing = $saved;
+	}
+
+	public function set_fields(array $fields) {
+		$this->fields = $fields;
+	}
+
+	public function has_field($field) {
+		return array_key_exists($field, $this->fields);
+	}
+
+	public function build_message($template) {
+		$crud = self::CRUD_DESCRIPTION[$this->action];
+		$replace = ['{itemid}' => $this->itemID, '{not}' => $this->has_success() ? '' : 'not', '{crud}' => $crud];
+		if ($this->whseID) {
+			$replace['{whseid}'] = $this->whseID;
+		}
+		$msg = str_replace(array_keys($replace), array_values($replace), $template);
+		$this->message = $msg;
+	}
+
+	public static function response_error($itemID, $message) {
+		$response = new ItmResponse();
+		$response->itemID = $itemID;
+		$response->message = $message;
+		$response->set_error(true);
+		$response->set_success(false);
+		return $response;
+	}
+
+	public static function response_success($itemID, $message) {
+		$response = new ItmResponse();
+		$response->itemID = $itemID;
+		$response->message = $message;
+		$response->set_error(false);
+		$response->set_success(true);
+		return $response;
 	}
 }

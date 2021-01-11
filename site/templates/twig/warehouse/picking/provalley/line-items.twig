@@ -1,10 +1,3 @@
-<div class="form-group">
-	<a href="{{ page.get_finishorderURL() }}" class="btn btn-success">
-		<i class="fa fa-floppy-o" aria-hidden="true"></i> Finish Picking
-	</a>
-	&nbsp;
-	<a href="{{ page.get_exitorderURL() }}" class="btn btn-danger exit-order">Exit Order</a>
-</div>
 <div class="list-group">
 	<div class="list-group-item">
 		<div class="row">
@@ -17,7 +10,7 @@
 		</div>
 	</div>
 	{% for item in lineitems %}
-		<div class="list-group-item first-txn-row">
+		<div class="list-group-item first-txn-row {{ item.count_pickeditems() > item.qtyordered ? 'bg-warning text-white'}}">
 			<div class="row">
 				<div class="col-sm-1">
 					{% if item.count_pickeditems() %}
@@ -29,8 +22,16 @@
 					{% endif %}
 				</div>
 				<div class="col-sm-4">
-					{{ item.itemid }} <br>
-					<small>{{ item.description }}</small>
+					{{ item.itemid }}
+					{% if item.description %}
+						<br>
+						<small>{{ item.description }}</small>
+					{% endif %}
+
+					{% if item.count_pickeditems() > item.qtyordered %}
+						<br>
+						<span class="badge badge-warning"> You are Picking more boxes than what was ordered </span>
+					{% endif %}
 				</div>
 				<div class="col-sm-1">{{ item.qtyordered }}</div>
 				<div class="col-sm-1">{{ item.qtypulled }}</div>
@@ -66,7 +67,7 @@
 						<div class="col-sm-1">{{ lotserial.bin }}</div>
 						<div class="col-sm-2">{{ lotserial.lotserial }}</div>
 						<div class="col-sm-2">{{ lotserial.lotserialref }}</div>
-						<div class="col-sm-2">{{ lotserial.qty }}</div>
+						<div class="col-sm-2">{{ lotserial.qty|number_format(2, '.', ',') }}</div>
 						<div class="col-sm-2">
 							<form action="{{ page.fullURL.getUrl() }}" method="post">
 								<input type="hidden" name="action" value="remove-lotserial">
@@ -75,7 +76,7 @@
 								<input type="hidden" name="recordnumber" value="{{ lotserial.recordnumber }}">
 								<input type="hidden" name="barcode" value="{{ lotserial.barcode }}">
 								<button type="submit" class="btn btn-danger btn-sm" type="button">
-									<i class="fa fa-trash" aria-hidden="true"></i> Remove
+									<i class="fa fa-trash" aria-hidden="true"></i> Delete
 								</button>
 							</form>
 						</div>

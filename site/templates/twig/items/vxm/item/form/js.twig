@@ -1,0 +1,523 @@
+{#
+	var                    Description / Instance of
+	-------------------------------------------------
+	page                   ProcessWire\Page
+	vxm                    module XrefVxm
+	item                   ItemXrefVendor
+	url_validate           URL to validate form inputs
+#}
+
+$(function() {
+	var eachlistprice = {{ item.eachlistprice }};
+	var itemID = '{{ item.ouritemID }}';
+	var primarypoordercode = '{{ item.getOptionpoordercodePrimary() }}';
+
+	var form_vxm = $('#vxm-item-form');
+	var input_listprice = form_vxm.find('input[name=listprice]');
+	var input_uom       = form_vxm.find('select[name=uom_purchase]');
+	var input_eachlistprice = form_vxm.find('input[name=eachlistprice]');
+	var input_itemID = form_vxm.find('input[name=itemID]');
+	var input_vendoritemID = form_vxm.find('input[name=vendoritemID]');
+	var input_vendorID = form_vxm.find('input[name=vendorID]');
+
+	var modal_ajax = $('#ajax-modal');
+
+/* =============================================================
+	Event Functions
+============================================================= */
+	$("body").on("change", ".unit-cost, .unit-qty", function(e) {
+		var input = $(this);
+		var unitrow = input.closest('.unit-row');
+		update_unitrow_margin(unitrow);
+
+		if (input.hasClass('unit-qty')) {
+			update_input_availability(unitrow);
+		}
+	});
+
+	$("body").on("change", "input[name=qty_percase]", function(e) {
+		var input = $(this);
+		var qty = parseFloat(input.val());
+		input.val(qty.toFixed({{ vxm.field_attribute('qty_percase', 'precision') }}));
+	});
+
+	$("body").on("change", "input[name=minbuyqty]", function(e) {
+		var input = $(this);
+		var qty = parseFloat(input.val());
+		input.val(qty.toFixed({{ vxm.field_attribute('minbuyqty', 'precision') }}));
+	});
+
+	$("body").on("keydown", ".unit-qty", function(e) {
+		var input = $(this);
+		var unitrow = input.closest('.unit-row');
+		update_input_availability(unitrow);
+	});
+
+	$("body").on("change", ".unit-margin", function(e) {
+		var unitrow = $(this).closest('.unit-row');
+		update_unitrow_cost(unitrow);
+
+		if (parseInt(unitrow.data('break')) > 0) {
+			var step = parseInt(unitrow.data('break'));
+			var nextrow = $('.unit-row[data-break='+(step + 1)+']');
+			nextrow.find('.unit-qty').removeAttr('readonly');
+		}
+	});
+
+	/**
+	 * Change the Unit of Measure Description when the Unit of Measure is changed
+	 */
+	$("body").on("change", "#uom_purchase", function(e) {
+		var input = $(this);
+		var conversion = input.find('option:selected').data('conversion');
+		var ele_description = input.siblings('p').find('.conversion-description');
+		$('.uom-purchase-code').text(input.val());
+		ele_description.text(conversion);
+		calculate_eachlistprice();
+	});
+
+	$("body").on("change", "input[name=itemID]", function(e) {
+		var input = $(this);
+		populate_item_data(input.val());
+	});
+
+	$("body").on("change", "input[name=listprice]", function(e) {
+		var input = $(this);
+		input.val(parseFloat(input.val()).toFixed({{ vxm.field_attribute('listprice', 'precision') }}));
+		$('input[name=eachlistprice]').val(parseFloat(get_eachlistprice()).toFixed({{ vxm.field_attribute('listprice', 'precision') }}));
+	});
+
+	function populate_item_data(itemID) {
+		request_item(itemID, function(item) {
+			if (item) {
+				console.log(item);
+				var itemcol = $('.item-col');
+				input_itemID.attr('data-iskit',  item.iskit ? 'true' : 'false');
+				input_itemID.attr('data-itemid', item.itemid);
+				itemcol.find('.description').text(item.description);
+				itemcol.find('.description2').text(item.description2);
+				itemcol.find('.uom-sale').text(item.uom.sale.description);
+				$('.uom-sale-code').attr('data-conversion', item.uom.sale.conversion);
+				$('.uom-sale-code').text(item.uom.sale.code);
+				input_listprice.val(item.pricing.base).change();
+				input_uom.val(item.uom.sale.code).change();
+
+				enable_disable_kit();
+			} else {
+				input_itemID.attr('data-iskit', 'false');
+				input_itemID.attr('data-itemid', '');
+				enable_disable_kit();
+			}
+		});
+	}
+
+	function enable_disable_kit() {
+		var input_iskit = $('select[name=iskit]');
+
+		if (input_itemID.attr('data-iskit') == 'false') {
+			input_iskit.val('N');
+			input_iskit.attr('disabled', 'disabled');
+			input_iskit.attr('tabindex', '-1');
+		} else {
+			input_iskit.val('Y');
+			input_iskit.removeAttr('disabled');
+			input_iskit.attr('tabindex', '');
+		}
+	}
+
+/* =============================================================
+	Unsaved Fields Alert
+============================================================= */
+	origForm = form_vxm.serialize();
+
+	$("body").on("click", "a:not(#itm-xrefs-form.form_button, #ajax-modal a)", function(e) {
+		if (form_vxm.serialize() !== origForm) {
+			e.preventDefault();
+			var a = $(this);
+			var href = a.attr('href');
+
+			swal2.fire({
+				title: 'Changes have occurred!',
+				text: 'Do you want to save?',
+				icon: 'warning',
+				showCancelButton: true,
+				confirmButtonText: '<i class="fa fa-floppy-o" aria-hidden="true"></i> Yes',
+				cancelButtonText: 'No',
+			}).then((result) => {
+				if (result.value) {
+					form_vxm.find('button[type=submit]').click();
+				} else if (result.dismiss === Swal.DismissReason.cancel) {
+					// Send HTTP GET Request to remove Record Lock
+					$.get('{{ page.vxm_itemURL(item.ouritemid) }}', function() {
+						window.location.href = href;
+					});
+				}
+			});
+		}
+	});
+
+/* =============================================================
+	AJAX Lookup Modal Functions
+============================================================= */
+	modal_ajax.on('show.bs.modal', function (event) {
+		var button = $(event.relatedTarget); // Button that triggered the modal
+		var modal = $(this);
+		var url = '{{ page.searchvendorsURL }}';
+
+		if (button.data('search') == 'vendor') {
+			url = '{{ page.searchvendorsURL }}';
+		} else {
+			url = '{{ page.searchitemsURL }}';
+		}
+
+		modal.find('.modal-title').text(button.attr('title'));
+		modal.resizeModal('xl');
+		modal.find('.modal-body').loadin(url, function() {});
+	});
+
+	$("body").on('click', '.vendor-link', function(e) {
+		e.preventDefault();
+		var button = $(this);
+		var vendorID = button.data('vendorid');
+		var name = button.data('name');
+		input_vendorID.val(vendorID);
+		input_vendorID.closest('.vendor-col').find('.name').text(name);
+		modal_ajax.modal('hide');
+	});
+
+	$("body").on('click', '.item-link', function(e) {
+		e.preventDefault();
+		var button = $(this);
+		var itemID = button.data('itemid');
+		var description = button.data('description');
+		input_itemID.val(itemID).change();
+		modal_ajax.modal('hide');
+	});
+
+	$("body").on('submit', '#ajax-modal form', function(e) {
+		e.preventDefault();
+		var form = $(this);
+		var query = form.serialize();
+		var action = form.attr('action');
+		var search = form.find('input[name=q]').val();
+		var url = action + '?' + query;
+		form.closest('.modal').find('.modal-title').text('Searching for ' + search);
+		form.closest('.modal').find('.modal-body').loadin(url, function() {});
+	});
+
+	$("body").on('click', '#ajax-modal .paginator-link', function(e) {
+		e.preventDefault();
+		var href = $(this).attr('href');
+		modal_ajax.find('.modal-body').load(href);
+	});
+
+/* =============================================================
+	Validation Functions
+============================================================= */
+	form_vxm.validate({
+		errorClass: "is-invalid",
+		validClass: "is-valid",
+		errorPlacement: function(error, element) {
+			error.insertAfter(element).addClass('invalid-feedback');
+		},
+		rules: {
+			vendorID: {
+				required: true,
+				remote: {
+					url: '{{ url_validate }}',
+					type: "get",
+					data: {
+						action: 'validate-vendorid'
+					}
+				}
+			},
+			vendoritemID: {
+				required: true,
+				remote: {
+					url: '{{ url_validate }}',
+					type: "get",
+					data: {
+						action: function() {
+							var input = $('input[name=vendoritemID]');
+
+							if (input.val() == input.data('vendoritemid') && input.data('new') !== true) {
+								return 'validate-vendor-itemid';
+							} else {
+								return 'validate-vendor-itemid-new';
+							}
+						},
+						vendorID: function() {
+							return $('input[name=vendorID]').val();
+						},
+						itemID: function() {
+							return $('input[name=itemID]').val();
+						},
+					}
+				}
+			},
+			itemID: {
+				required: true,
+				remote: {
+					url: '{{ url_validate }}',
+					type: "get",
+					data: {
+						action: 'validate-itemid'
+					}
+				}
+			},
+			uom_purchase: {required: true},
+			qty_percase: {required: true},
+			optioncode: {
+				required: false,
+				maxlength: {{ vxm.field_attribute('optioncode', 'maxlength') }}
+			},
+		},
+		messages: {
+			ouritemID: "Please enter the Your Item ID",
+			uom_purchase: "Select a Purchase Unit of Measure",
+		},
+		submitHandler: function(form) {
+			var select_poordercode = form_vxm.find('select[name=po_ordercode]');
+			var input_validatedpoordercode = select_poordercode.siblings('input[name=po_ordercode_validated]');
+			var formdata = form_vxm.serializeArray().reduce(function(obj, item) {
+				obj[item.name] = item.value;
+				return obj;
+			}, {});
+			update_vxm(form);
+		}
+	});
+
+	function update_vxm(form) {
+		request_validate_vendoritemID(function(exists) {
+			if (exists === true) {
+				if (input_vendoritemID.val() != input_vendoritemID.data('vendoritemid')) {
+					swal_vendoritem_exists();
+				} else {
+					validate_form_poordercode(form);
+				}
+			} else {
+				validate_form_poordercode(form);
+			}
+		});
+	}
+
+	function validate_form_poordercode(form) {
+		var select_poordercode = form_vxm.find('select[name=po_ordercode]');
+		var input_validatedpoordercode = select_poordercode.siblings('input[name=po_ordercode_validated]');
+
+		if (input_validatedpoordercode.val() == 'false') {
+			if (select_poordercode.val() == primarypoordercode) {
+				validate_poordercode(function(valid) {
+					if (valid) {
+						input_validatedpoordercode.val('true');
+						form_vxm.submit();
+					} else {
+						swal_overwrite_poordercode();
+					}
+				});
+			} else {
+				input_validatedpoordercode.val('true');
+				form_vxm.submit();
+			}
+		} else {
+			form.submit();
+		}
+	}
+
+	function swal_vendoritem_exists() {
+		swal2.fire({
+			title: "Vendor Item " + input_vendoritemID.val() + " exists",
+			text: 'Would you like to go edit this item?',
+			icon: 'error',
+			showCancelButton: true,
+			confirmButtonText: 'Yes',
+			cancelButtonText: 'No',
+		}).then((result) => {
+			if (result.value) {
+				var uri = new URI();
+				uri.removeQuery('vendoritemID');
+				uri.setQuery('vendorID', input_vendorID.val());
+				uri.setQuery('vendoritemID', input_vendoritemID.val());
+				window.location.href = uri.toString();
+			}
+		});
+	}
+
+	function swal_overwrite_poordercode() {
+		msg = input_itemID.val() + " already has a primary";
+		swal2.fire({
+			title: "Overwrite Primary PO Ordercode?",
+			text: msg,
+			icon: 'warning',
+			showCancelButton: true,
+			confirmButtonClass: 'btn btn-success',
+			cancelButtonClass: 'btn btn-danger',
+			buttonsStyling: false,
+			confirmButtonText: 'Yes!'
+		}).then(function (result) {
+			if (result.value) {
+				input_validatedpoordercode.val('true');
+				form_vxm.submit();
+			}
+		});
+	}
+
+/* =============================================================
+	AJAX Request Functions
+============================================================= */
+	/**
+	 * Gets boolean value if VXM item can be Primary PO Ordercode then calls callback function
+	 * @param  {Function} callback
+	 * @return bool       Can VXM item be used as Primary PO Order Code?
+	 */
+	function validate_poordercode(callback) {
+		var url = new URI('{{ url_validate }}');
+		url.addQuery('action', 'validate-primary-poordercode').addQuery('ouritemID', input_itemID.val());
+		url.addQuery('vendoritemID', input_vendoritemID.val());
+		url.addQuery('return', 'bool');
+
+		// URL RETURNS boolean true or string UPC code for false
+		$.getJSON(url.toString(), function( valid ) {
+			callback(valid);
+		});
+	}
+
+	/**
+	 * Gets boolean value if VXM item exists then calls callback function
+	 * @param  {Function} callback
+	 * @return bool       Does VXM item exist?
+	 */
+	function request_validate_vendoritemID(callback) {
+		var url = new URI('{{ url_validate }}');
+		url.addQuery('action', 'validate-vendor-itemid').addQuery('vendorID', input_vendorID.val());
+		url.addQuery('vendoritemID', input_vendoritemID.val());
+		url.addQuery('return', 'bool');
+		$.getJSON(url.toString(), function( valid ) {
+			callback(valid);
+		});
+	}
+
+	function request_item(itemID, callback) {
+		var url = new URI('{{ url_validate }}');
+		url.addQuery('action', 'get-item').addQuery('itemID', itemID);
+
+		$.getJSON(url.toString(), function( item ) {
+			callback(item);
+		});
+	}
+/* =============================================================
+	Margin Calculation Functions
+============================================================= */
+	/**
+	 * Recalculates Each List Price based on the Unit of Measure Purchase Conversion
+	 */
+	function calculate_eachlistprice() {
+		var oldlistprice = eachlistprice;
+		eachlistprice = parseFloat(get_eachlistprice());
+		input_eachlistprice.val(eachlistprice.toFixed({{ vxm.field_attribute('listprice', 'precision') }}));
+
+		calculate_margins();
+	}
+
+	function get_eachlistprice() {
+		var conversion = input_uom.find('option:selected').data('conversion');
+		return eachlistprice = input_listprice.val() / parseFloat(conversion);
+	}
+
+	function get_listprice() {
+		return input_listprice.val();
+	}
+
+	/**
+	 * Calculates Margin for each Unit Cost
+	 */
+	function calculate_margins() {
+		$(".unit-row").each(function(index ) {
+			update_unitrow_margin($(this));
+		});
+	}
+
+	/**
+	 * Calculates Margin for one Unit Cost
+	 * @param  JqueryElement unitrow
+	 */
+	function update_unitrow_margin(unitrow) {
+		var input_unitqty = unitrow.find('.unit-qty');
+		var input_unitcost = unitrow.find('.unit-cost');
+		input_unitcost.val(parseFloat(input_unitcost.val()).toFixed({{ vxm.field_attribute('unit_cost', 'precision') }}));
+
+		if (parseFloat(input_unitcost.val())) {
+			var input_margin = unitrow.find('.unit-margin');
+			var margin = determine_unitmargin(parseFloat(input_unitcost.val()));
+			var displaymargin = parseFloat(margin).toFixed({{ vxm.field_attribute('unit_margin', 'precision') }});
+			input_margin.val(displaymargin);
+			console.log({{ vxm.field_attribute('unit_margin', 'precision') }})
+		}
+	}
+
+	/**
+	 * Calculates Margin for one Unit Cost
+	 * @param JqueryElement unitrow
+	 */
+	function update_unitrow_cost(unitrow) {
+		var input_unitqty = unitrow.find('.unit-qty');
+		var input_unitcost = unitrow.find('.unit-cost');
+		var input_margin = unitrow.find('.unit-margin');
+		var margin = parseFloat(input_margin.val()).truncate({{ vxm.field_attribute('unit_margin', 'precision') }});
+
+		input_margin.val(margin);
+
+		if (parseFloat(input_margin.val())) {
+			var cost = parseFloat(determine_unitcost(margin)).toFixed({{ vxm.field_attribute('unit_cost', 'precision') }});
+			input_unitcost.val(cost);
+		}
+	}
+
+	/**
+	 * Calculates Margin for one Unit Cost
+	 * @param  JqueryElement unitrow
+	 */
+	function update_input_availability(unitrow) {
+		var input_unitqty = unitrow.find('.unit-qty');
+		var inputs = unitrow.find('.unit-cost, .unit-margin');
+
+		if (parseFloat(input_unitqty.val()) > 0) {
+			inputs.removeAttr('readonly');
+			inputs.removeAttr('tabindex');
+		} else {
+			inputs.attr('readonly', 'readonly');
+			inputs.attr('tabindex', '-1');
+		}
+	}
+
+	/**
+	 * Returns Margin for cost
+	 * @param  float   cost Unit Cost
+	 * @return float
+	 */
+	function determine_unitmargin(cost) {
+		var listprice = get_listprice();
+
+		if (listprice == 0 || cost == 0) {
+			return '';
+		} else {
+			var markup = listprice - cost;
+			return markup / listprice * 100;
+		}
+	}
+
+	/**
+	 * Returns Cost for Margin
+	 * @param  float    margin Margin Percent
+	 * @return float
+	 */
+	function determine_unitcost(margin) {
+		var listprice = get_listprice();
+
+		if (listprice == 0 || margin == 0) {
+			return '';
+		} else {
+			return (1 - (margin / 100)) * listprice;
+		}
+	}
+});

@@ -1,5 +1,7 @@
 <?php namespace ProcessWire;
 
+include_once(__DIR__.'/ScreenFormatter.module');
+
 /**
  * Class for formatting the VI Purchase Orders Screen
  */

@@ -7,7 +7,6 @@ use CartdetQuery, Cartdet;
 use QnoteQuery, Qnote;
 use PricingQuery, Pricing;
 
-
 use ItemMasterItemQuery, ItemMasterItem;
 use CstkItemQuery, CstkItem;
 use CstkHeadQuery, CstkHead;
@@ -36,9 +35,14 @@ class LastSoldItemsCustomerCstk extends WireData implements Module {
 	 * @return CstkItem[]|ObjectCollection
 	 */
 	public function get_cstk_items() {
-		$cstk = $this->get_cstk_head();
-		$q = $this->get_cstk_item_query($cstk);
-		return $q->find();
+		if ($this->does_cstk_exist()) {
+			$cstk = $this->get_cstk_head();
+			$q = $this->get_cstk_item_query($cstk);
+			return $q->find();
+		} else {
+			return array();
+		}
+
 	}
 
 	/**
@@ -47,9 +51,27 @@ class LastSoldItemsCustomerCstk extends WireData implements Module {
 	 */
 	public function get_cstk_itemids() {
 		$cstk = $this->get_cstk_head();
-		$q = $this->get_cstk_item_query($cstk);
-		$q->select(CstkItem::get_aliasproperty('itemid'));
-		return $q->find()->toArray();
+		if ($cstk) {
+			$q = $this->get_cstk_item_query($cstk);
+			$q->select(CstkItem::get_aliasproperty('itemid'));
+			return $q->find()->toArray();
+		} else {
+			return array();
+		}
+	}
+
+	/**
+	 * Returns if Pricing is available for all CSTK items
+	 * @return bool
+	 */
+	public function has_pricing() {
+		$itemids = $this->get_cstk_itemids();
+
+		$q = PricingQuery::create();
+		$q->select('price');
+		$q->filterBySessionid(session_id());
+		$q->filterByItemid($itemids);
+		return $q->count() == sizeof($itemids);
 	}
 
 	/**
@@ -83,6 +105,31 @@ class LastSoldItemsCustomerCstk extends WireData implements Module {
 		$q->filterBySessionid(session_id());
 		$q->filterByItemid($itemID);
 		return $q->findOne();
+	}
+
+	/**
+	 * Returns Price for Item
+	 * NOTE: Record must be loaded
+	 * @param  string $itemID Item ID
+	 * @return float
+	 */
+	public function get_item_availability($itemID) {
+		$q = PricingQuery::create();
+		$q->select('qty');
+		$q->filterBySessionid(session_id());
+		$q->filterByItemid($itemID);
+		return $q->findOne();
+	}
+
+	/**
+	 * Returns if CSTK exists for custid, shiptoid
+	 * @return bool
+	 */
+	public function does_cstk_exist() {
+		$q = CstkHeadQuery::create();
+		$q->filterByCustidShiptoid($this->custID, $this->shiptoID);
+		$q->filterByType(CstkHead::TYPE_ORDER);
+		return boolval($q->count());
 	}
 
 	/**

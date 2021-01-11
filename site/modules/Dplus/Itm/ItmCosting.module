@@ -1,0 +1,229 @@
+<?php namespace ProcessWire;
+
+include_once(__DIR__.'/ItmResponse.php');
+
+use Purl\Url;
+
+use ConfigInQuery, ConfigIn;
+use ConfigPoQuery, ConfigPo;
+use ItemMasterItemQuery, ItemMasterItem;
+use UnitofMeasurePurchaseQuery, UnitofMeasurePurchase;
+use ApBuyerQuery, ApBuyer;
+
+/**
+ * Module that handles the editing of the ITM record for costing
+ *
+ * @param WireData $configs       Wrappper Class for configs
+ * @param ConfigIn $configs->inv  IN Config
+ * @param ConfigPo $configs->po   PO Config
+ * @param string   $appcustID     Application CustId from ConfigSys
+ */
+class ItmCosting extends WireData implements Module {
+	const MODEL              = 'ItemMasterItem';
+	const MODEL_KEY          = 'code';
+	const DESCRIPTION        = 'ITM Costing';
+	const DESCRIPTION_RECORD = 'ITM Costing';
+
+	public function __construct() {
+		$this->description = self::DESCRIPTION;
+		$this->configs = new WireData();
+		$this->configs->inv = false;
+		$this->configs->po  = false;
+		$this->appcustID    = '';
+	}
+
+	public function init_configs() {
+		$this->configs->inv = $this->get_config_in();
+		$this->configs->po  = $this->get_config_po();
+		$this->appcustID    = $this->wire('modules')->get('DplusCustomer')->get_custID();
+	}
+
+/* =============================================================
+	CRUD Processing Functions
+============================================================= */
+
+	/**
+	 * Takes Input, validates Item Updates the pricing record for it, sends update to DPlus
+	 * NOTE: Updates ITM record with changes to the uom_sale, allow_discount, assortmentcode, assortmentqty fields
+	 *
+	 * @param  WireInput $input Input
+	 * @return void
+	 */
+	public function process_input(WireInput $input) {
+		$itm = $this->wire('modules')->get('Itm');
+		$rm = strtolower($input->requestMethod());
+		$values = $input->$rm;
+		$itemID = $values->text('itemID');
+		$recordlocker = $this('modules')->get('RecordLockerUser');
+
+		if ($values->action) {
+			if ($itm->item_exists($itemID)) {
+				/**
+				 * Create lock for ITM code if not already locked.
+				 */
+				if (!$recordlocker->function_locked('itm', $itemID)) {
+					$recordlocker->create_lock('itm', $itemID);
+				}
+
+				if ($recordlocker->function_locked_by_user('itm', $itemID)) {
+					if ($values->text('action') == 'update-itm-costing') {
+						$response = $this->update_itm_input($input);
+					}
+				} else {
+					$message = self::DESCRIPTION_RECORD . " ($itemID)  was not saved, it is locked by " . $recordlocker->get_locked_user('itm', $itemID);
+					$response = ItmResponse::response_error($itemID, $message, ItmResponse::CRUD_UPDATE);
+				}
+			} else {
+				$response = ItmResponse::response_error($itemID, "Item $itemID does not exist");
+			}
+		} else {
+			$response = ItmResponse::response_error($itemID, "No Action was specified");
+		}
+		$this->wire('session')->response_itm = $response;
+	}
+
+	/**
+	 * Updates ITM Item Record and updates DPLUS
+	 * Records values for uom_sale, allow_discount, assortmentcode, assortmentqty
+	 * @param  WireInput $input
+	 * @return ItmResponse
+	 */
+	public function update_itm_input(WireInput $input) {
+		$this->init_configs();
+		$itm = $this->wire('modules')->get('Itm');
+		$validate = $this->wire('modules')->get('ValidateItm');
+		$rm = strtolower($input->requestMethod());
+		$values = $input->$rm;
+		$itemID = $values->text('itemID');
+
+		$item = $itm->get_item($itemID);
+		$item->setUom_purchase($values->text('uom_purchase'));
+		$item->setStandardcost($values->text('standardcost'));
+		$item->setLastcost($values->text('lastcost'));
+		$item->setMinmargin($values->text('minmargin'));
+		$item->setStandardcostbasedon($values->text('standardcostbasedon'));
+
+		if ($this->is_buyercontrol_item()) {
+			if (strlen($values->text('buyer')) && $validate->buyercode($values->text('buyer'))) {
+				$item->setBuyer($values->text('buyer'));
+			}
+		}
+
+		if ($this->appcustID == 'LINDST') {
+			$item->Qty_purchase_carton($values->int('qty_purchase_carton'));
+		}
+
+		return $this->save_and_process_response($item);
+	}
+
+/* =============================================================
+	CRUD Response Functions
+============================================================= */
+	/**
+	 * Returns XrefResponse based on the outcome of the database save
+	 * @param  ItemMasterItem $record Record to record response of database save
+	 * @return ItmResponse
+	 */
+	protected function save_and_process_response(ItemMasterItem $record) {
+		$is_new = $record->isDeleted() ? false : $record->isNew();
+		$saved  = $record->isDeleted() ? $record->isDeleted() : $record->save();
+
+		$response = new ItmResponse();
+		$response->set_itemID($record->itemid);
+		$message = self::DESCRIPTION_RECORD . " ($record->itemid) was ";
+
+		if ($saved) {
+			$response->set_success(true);
+		} else {
+			$response->set_error(true);
+			$message .= "not ";
+		}
+
+		if ($is_new) {
+			$message .= 'added';
+			$response->set_action(ItmResponse::CRUD_CREATE);
+		} elseif ($record->isDeleted()) {
+			$message .= 'deleted';
+			$response->set_action(ItmResponse::CRUD_DELETE);
+		} else {
+			$message .= 'updated';
+			$response->set_action(ItmResponse::CRUD_UPDATE);
+		}
+
+		$response->set_message($message);
+		$response->set_saved_itm_costing($response->has_success());
+
+		if ($response->has_success()) {
+			$module_itm = $this->wire('modules')->get('Itm');
+			$module_itm->request_item_update($itemID);
+		}
+		return $response;
+	}
+
+/* =============================================================
+	Supplemental Functions
+============================================================= */
+	/**
+	 * Return UOM Purchases
+	 * @return UnitofMeasurePurchase[]|ObjectCollection
+	 */
+	public function get_uom_purchases() {
+		return UnitofMeasurePurchaseQuery::create()->find();
+	}
+
+	/**
+	 * Return Options for which Standard Cost is based on
+	 * @return array
+	 */
+	public function get_standardcost_basedon_options() {
+		return ItemMasterItem::STANDARDCOST_BASE_OPTIONS;
+	}
+
+	/**
+	 * Return ApBuyers
+	 * @return ApBuyer[]|ObjectCollection
+	 */
+	public function get_ap_buyers() {
+		return ApBuyerQuery::create()->find();
+	}
+
+	/**
+	 * Returns IN config
+	 * @return ConfigIn
+	 */
+	public function get_config_in() {
+		return ConfigInQuery::create()->findOne();
+	}
+
+	/**
+	 * Returns PO config
+	 * @return ConfigPo
+	 */
+	public function get_config_po() {
+		return ConfigPoQuery::create()->findOne();
+	}
+
+	/**
+	 * Return if ConfigPo's Buyer Control is Item
+	 * @return bool
+	 */
+	public function is_buyercontrol_item() {
+		if (empty($this->configs->po)) {
+			$this->init_configs();
+		}
+		return $this->configs->po->controlbuyer == ConfigPo::CONTROL_BUYER_ITEM;
+	}
+	
+/* =============================================================
+	ProcessWire Module Functions
+============================================================= */
+	public static function getModuleInfo() {
+		return array(
+			'title' => 'Dplus ITM Costing CRUD Manager',
+			'version' => 101,
+			'summary' => 'Module for CRUD Methods for ITM Costing',
+			'singular' => true,
+			'autoload' => true,
+		);
+	}
+}

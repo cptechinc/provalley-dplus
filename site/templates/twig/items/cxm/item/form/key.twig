@@ -1,0 +1,106 @@
+{#
+	var                    Description / Instance of
+	-------------------------------------------------
+	page                   ProcessWire\Page
+	cxm                    module XrefCxm
+	recordlocker           module RecordLockerUser
+	qnotes                 module QnotesItemXrefCustomer
+	item                   ItemXrefCustomer
+	item.item              ItemMasterItem
+#}
+{% if item.isNew() and page.has('custID') == false %}
+	<div class="row form-group">
+		<div class="col-sm-4">
+			<label for="custID">Customer ID</label>
+		</div>
+		<div class="col-sm-8">
+			{% include 'util/form/input-with-modal-lookup.twig' with {
+					'name': 'custID', 'value': item.custID,
+					'modaltarget': '#ajax-modal', 'modaldescription': 'Search for / Choose Customer',
+					'attributes_button': {
+						'data-search': 'customer'
+					}
+				}
+			%}
+		</div>
+	</div>
+{% else %}
+	<input type="hidden" name="custID" value="{{ item.custid }}">
+	{% if (page.pw_template == 'itm-xrefs-cxm') %}
+		<div class="row form-group">
+			<div class="col-sm-4">
+				<label for="custID">Customer ID</label>
+			</div>
+			<div class="col-sm-8">
+				<p class="form-control-plaintext form-control-sm">{{ item.custid }} - {{ item.customer.name }}</p>
+			</div>
+		</div>
+	{% endif %}
+{% endif %}
+<div class="row form-group">
+	<div class="col-sm-4">
+		<label for="custitemID">Customer Item ID</label>
+	</div>
+	<div class="col-sm-8">
+		{% include 'util/form/input.twig' with {
+				'name': 'custitemID', 'value': item.custitemID,
+				'attributes': {
+					'data-custitemid': item.custitemID,
+					'maxlength': cxm.maxlength_custitemid(),
+					'readonly': item.custitemid ? true : false,
+					'tabindex': item.custitemid ? '-1' : '',
+				}
+			}
+		%}
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-1"></div>
+	<div class="col-sm-3">
+		<label for="description">Description</label>
+	</div>
+	<div class="col-sm-8">
+		{% include 'util/form/input.twig' with {
+				'name': 'description', 'value': item.description,
+				'attributes': {
+					'maxlength': cxm.maxlength_description()
+				}
+			}
+		%}
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-4">
+
+	</div>
+	<div class="col-sm-8">
+		{% include 'util/form/input.twig' with {
+				'name': 'description2', 'value': item.description2,
+				'attributes': {
+					'maxlength': cxm.maxlength_description2()
+				}
+			}
+		%}
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-4">
+		<label for="itemID">Our Item ID</label>
+	</div>
+	<div class="col-sm-8 item-col">
+		{% include 'util/form/input-with-modal-lookup.twig' with {
+				'name': 'itemID', 'value': item.itemid,
+				'modaltarget': '#ajax-modal', 'modaldescription': 'Search for / Choose Item',
+				'attributes_button': {
+					'data-search': 'item'
+				},
+				'attributes': {
+					'itemid':     item.itemid,
+					'qtypercase': item.qty_percase
+				}
+			}
+		%}
+		<small class="form-text text-muted description">{{ item.item.description }}</small>
+		<small class="form-text text-muted description2">{{ item.item.description2 }}</small>
+	</div>
+</div>

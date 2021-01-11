@@ -29,17 +29,17 @@ class DpagesScreenFormatter extends Dpages implements Module {
 	const TEMPLATES = array(
 		'formatter-menu' => array(
 			'name'   => 'formatter-menu',
-			'fields' => array('title', 'summary'),
+			'fields' => array('title', 'summary', 'dplus_function', 'dplus_permission',),
 			'paginated' => true
 		),
 		'formatter-screen' => array(
 			'name'   => 'formatter-screen',
-			'fields' => array('title', 'jsoncode', 'formatter', 'summary', 'twig_include', 'dplus_function'),
+			'fields' => array('title', 'summary', 'dplus_function', 'dplus_permission', 'jsoncode', 'formatter', 'twig_include'),
 			'paginated' => true
 		),
 		'dplus-screen-formatter' => array(
 			'name'   => 'dplus-screen-formatter',
-			'fields' => array('title', 'jsoncode', 'formatter', 'summary', 'twig_include', 'dplus_function'),
+			'fields' => array('title', 'summary', 'dplus_function', 'dplus_permission', 'jsoncode', 'formatter', 'twig_include'),
 			'paginated' => true
 		)
 	);
@@ -78,6 +78,17 @@ class DpagesScreenFormatter extends Dpages implements Module {
 			'twig_include'   => 'items/ii/quotes/quotes.twig',
 			'dplus_function' => 'iiqtf'
 		),
+		'ii-quotes' => array(
+			'template'       => 'dplus-screen-formatter',
+			'name'           => 'lotserial',
+			'title'          => 'II Lotserial',
+			'summary'        => 'II Lotserial Formatter',
+			'parent'         => '/mii/admin/',
+			'formatter'      => 'SfIiLotserial',
+			'jsoncode'       => 'ii-lotserial',
+			'twig_include'   => 'items/ii/lotserial/lotserial.twig',
+			'dplus_function' => ''
+		),
 		'ii-purchase-orders' => array(
 			'template'       => 'dplus-screen-formatter',
 			'name'           => 'purchase-orders',
@@ -99,6 +110,17 @@ class DpagesScreenFormatter extends Dpages implements Module {
 			'jsoncode'       => 'ii-purchase-history',
 			'twig_include'   => 'items/ii/purchase-history/purchase-history.twig',
 			'dplus_function' => 'iiphf'
+		),
+		'ii-stock-item' => array(
+			'template'       => 'dplus-screen-formatter',
+			'name'           => 'item-stock',
+			'title'          => 'II Item Stock',
+			'summary'        => 'II Item Stock Formatter',
+			'parent'         => '/mii/admin/',
+			'formatter'      => 'SfIiStockItem',
+			'jsoncode'       => 'ii-stock',
+			'twig_include'   => 'items/ii/item/stock.twig',
+			'dplus_function' => ''
 		),
 		'ci-sales-orders' => array(
 			'template'       => 'dplus-screen-formatter',

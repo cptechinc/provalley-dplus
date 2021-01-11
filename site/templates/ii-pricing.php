@@ -46,14 +46,14 @@
 		} else {
 			$filter_customers = $modules->get('FilterCustomers');
 			$filter_customers->init_query($user);
-			$filter_customers->filter_search($input->get->text('q'));
+			$filter_customers->search($input->get->text('q'));
 
 			$query = CustomerQuery::create();
 
 			if ($input->get->q) {
 				$q = strtoupper($input->get->text('q'));
 				$page->title = "II Pricing: Searching for '$q'";
-				$filter_customers->filter_search($q);
+				$filter_customers->search($q);
 			}
 			$filter_customers->apply_sortby($page);
 			$query = $filter_customers->get_query();
