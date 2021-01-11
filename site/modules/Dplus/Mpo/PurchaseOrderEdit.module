@@ -418,7 +418,7 @@ class PurchaseOrderEdit extends WireData implements Module {
 		$dplusdb = $this->wire('modules')->get('DplusOnlineDatabase')->db_name;
 		$data = array_unshift($data, ["DBNAME=$dplusdb"]);
 		$requestor = $this->wire('modules')->get('DplusRequest');
-		$requestor->write_dplusfile($data, $this->sessionID));
+		$requestor->write_dplusfile($data, $this->sessionID);
 		$requestor->cgi_request($config->cgis['default'], $this->sessionID);
 	}
 
