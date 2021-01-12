@@ -9,6 +9,7 @@ use VendorQuery, Vendor;
 use ShipviaQuery, Shipvia;
 use ApTermsCodeQuery, ApTermsCode;
 use CountryCodesQuery, CountryCodes;
+use ItemMasterItemQuery, ItemMasterItem;
 
 use EditPoHeadQuery, EditPoHead;
 use StatesQuery, States;
@@ -119,7 +120,7 @@ class PurchaseOrderEdit extends WireData implements Module {
 				break;
 			case 'exit':
 				$ponbr = $values->text('ponbr');
-				$this->request_po_exist($ponbr);
+				$this->request_po_exit($ponbr);
 				break;
 		}
 	}
@@ -416,7 +417,7 @@ class PurchaseOrderEdit extends WireData implements Module {
 	private function request_dplus(array $data) {
 		$config = $this->wire('config');
 		$dplusdb = $this->wire('modules')->get('DplusOnlineDatabase')->db_name;
-		$data = array_unshift($data, ["DBNAME=$dplusdb"]);
+		$data = array_merge(["DBNAME=$dplusdb"], $data);
 		$requestor = $this->wire('modules')->get('DplusRequest');
 		$requestor->write_dplusfile($data, $this->sessionID);
 		$requestor->cgi_request($config->cgis['default'], $this->sessionID);
@@ -427,7 +428,7 @@ class PurchaseOrderEdit extends WireData implements Module {
 	 * @param  string $ponbr Purchase Order Number
 	 * @return void
 	 */
-	private function request_po_edit($ponbr) {
+	public function request_po_edit($ponbr) {
 		$data = array('EDITPURCHASEORDER', "PONBR=$ponbr");
 		$this->request_dplus($data);
 	}
@@ -678,6 +679,10 @@ class PurchaseOrderEdit extends WireData implements Module {
 	public function get_logperm() {
 		$q = LogpermQuery::create();
 		return $q->findOneBySessionid($this->sessionID);
+	}
+
+	public function itmitem($itemID) {
+		return ItemMasterItemQuery::create()->findOneByItemid($itemID);
 	}
 
 	/**
