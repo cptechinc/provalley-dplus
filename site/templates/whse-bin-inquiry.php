@@ -15,7 +15,7 @@
 		}
 
 		if (file_exists($config->paths->templates."twig/warehouse/inventory/bin-inquiry/$config->company/results-list.twig")) {
-			$page->body .= $config->twig->render("warehouse/inventory/bin-inquiry/$config->company/results-list.twig", ['page' => $page, 'config' => $config->inventory, 'warehouse' => $warehouse, 'inventory' => $searchinventory]);
+			$page->body .= $config->twig->render("warehouse/inventory/bin-inquiry/$config->company/results-list.twig", ['page' => $page, 'config' => $config->inventory, 'warehouse' => $warehouse, 'inventory' => $searchinventory, 'db' => $db_dpluso]);
 		} else {
 			$page->body .= $config->twig->render('warehouse/inventory/bin-inquiry/results-list.twig', ['page' => $page, 'config' => $config->inventory, 'warehouse' => $warehouse, 'inventory' => $searchinventory]);
 		}
