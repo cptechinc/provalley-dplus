@@ -41,6 +41,11 @@ class PoAmend extends WireData implements Module {
 		return $epo->exists_editable($ponbr);
 	}
 
+	public function delete_editable() {
+		$epo = $this->wire('modules')->get('PurchaseOrderEdit');
+		return $epo->delete_editable_header();
+	}
+
 /* =============================================================
 	CRUD Processing Functions
 ============================================================= */
