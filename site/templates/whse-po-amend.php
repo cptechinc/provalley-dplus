@@ -40,6 +40,7 @@ if ($values->ponbr) {
 		$page->body .= $config->twig->render('purchase-orders/purchase-order/lookup-form.twig', ['page' => $page]);
 	}
 } else {
+	$apo->delete_editable();
 	$page->body .= $config->twig->render('purchase-orders/purchase-order/lookup-form.twig', ['page' => $page]);
 }
 
