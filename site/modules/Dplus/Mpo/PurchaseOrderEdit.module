@@ -45,10 +45,12 @@ class PurchaseOrderEdit extends WireData implements Module {
 	 * @param  string $ponbr Purchase Order Number
 	 * @return EditPoHeadQuery
 	 */
-	public function get_query_header($ponbr) {
+	public function get_query_header($ponbr = '') {
 		$q = EditPoHeadQuery::create();
 		$q->filterBySessionid($this->sessionID);
-		$q->filterByPonbr($ponbr);
+		if ($ponbr) {
+			$q->filterByPonbr($ponbr);
+		}
 		return $q;
 	}
 
@@ -69,6 +71,15 @@ class PurchaseOrderEdit extends WireData implements Module {
 	public function exists_editable_header($ponbr) {
 		$q = $this->get_query_header($ponbr);
 		return boolval($q->count());
+	}
+
+	/**
+	 * Delete Header(s) for session
+	 * @return bool
+	 */
+	public function delete_editable_header() {
+		$q = $this->get_query_header();
+		return $q->delete();
 	}
 
 	/**
