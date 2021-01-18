@@ -2,6 +2,12 @@ $(function() {
 	var form = $('#print-label-form');
 	var modal_ajax    = $('#ajax-modal');
 
+	if (form.find('input[name=qty]').val() == '') {
+		form.find('input[name=qty]').focus();
+	} else {
+		form.find('input[name=labelcount]').focus();
+	}
+
 /* =============================================================
 	Lookup Modal Functions
 ============================================================= */
@@ -81,9 +87,16 @@ $(function() {
 /* =============================================================
 	Event Functions
 ============================================================= */
-	$("body").on("change", "input[name=itemID]", function(e) {
+	$("body").on('change', '#print-label-form input[name=itemID]', function(e) {
+		e.preventDefault();
 		var input = $(this);
-		populate_item_data(input.val());
+		validate_itemid_entry(input.val(), function(item) {
+			if (item.exists) {
+				input.val(item.itemID).change();
+				validator.element('#itemID');
+				populate_item_data(input.val());
+			}
+		});
 	});
 
 	function populate_item_data(itemID) {
@@ -103,6 +116,24 @@ $(function() {
 
 		$.getJSON(url.toString(), function( item ) {
 			callback(item);
+		});
+	}
+
+	/**
+	 * Return Item Entry Object Validation
+	 * @param  string     itemID    Item ID
+	 * @param  string     vendorID  Vendor ID
+	 * @param  {Function} callback  Callback Function
+	 * @return {object}             {exists: (bool), itemID: xxx, message: xxx, source: xxx }
+	 */
+	function validate_itemid_entry(itemID, callback) {
+		var url = URI("{{ page.ii_lookupURL() }}");
+		url.addQuery('itemID', itemID);
+		url.addQuery('custID', '');
+		url.addQuery('shiptoID', '');
+
+		$.getJSON(url.toString(), function( response ) {
+			return callback(response);
 		});
 	}
 });
