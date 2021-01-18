@@ -9,9 +9,9 @@ $(function () {
 	var modal_ajax    = $('#ajax-modal');
 	var form_edit = $('#edit-item-form');
 	var form_add  = $('#add-item-form');
-	var items = {{ apo.items.all_array(ponbr)|json_encode()|raw }};
 	var decimal_places_qty = {{ apo.items.configs.decimal_places_qty() }};
 	var decimal_places_cost = {{ apo.items.configs.decimal_places_cost() }};
+
 
 /* =============================================================
 	Edit Line Item Functions
@@ -25,20 +25,26 @@ $(function () {
 	});
 
 	function populate_item_inputs(linenbr) {
-		var item = items[linenbr];
-		var form = new EditItemForm(form_edit);
-		form.inputs.linenbr.val(linenbr);
-		form.inputs.itemID.val(item.itemid);
-		form.inputs.description.val(item.description);
-		form.inputs.vendoritemID.val(item.vendoritemid);
-		form.inputs.whse.val(item.whseid);
-		form.inputs.specialorder.val(item.specialorder);
-		form.inputs.uom.val(item.uom);
-		form.inputs.qty.ordered.val(parseFloat(item.qty.ordered).toFixed(decimal_places_qty));
-		form.inputs.qty.received.text(parseFloat(item.qty.received).toFixed(decimal_places_qty));
-		form.inputs.qty.invoiced.text(parseFloat(item.qty.invoiced).toFixed(decimal_places_qty));
-		form.inputs.cost.val(parseFloat(item.cost).toFixed(decimal_places_cost));
-		form.inputs.cost_total.val(parseFloat(item.cost_total).toFixed(decimal_places_cost));
+		get_po_line(form_edit.find('input[name=ponbr]').val(), linenbr, function(item) {
+			if (item) {
+				var form = new EditItemForm(form_edit);
+				form.inputs.linenbr.val(linenbr);
+				form.inputs.itemID.val(item.itemid);
+				form.inputs.description.val(item.description);
+				form.inputs.vendoritemID.val(item.vendoritemid);
+				form.inputs.whse.val(item.whseid);
+				form.inputs.specialorder.val(item.specialorder);
+				form.inputs.uom.val(item.uom);
+				form.inputs.qty.ordered.val(floatParse(item.qty.ordered).toFixed(decimal_places_qty));
+				form.inputs.qty.received.text(floatParse(item.qty.received).toFixed(decimal_places_qty));
+				form.inputs.qty.invoiced.text(floatParse(item.qty.invoiced).toFixed(decimal_places_qty));
+				form.inputs.cost.val(floatParse(item.cost).toFixed(decimal_places_cost));
+				{% if page.config.company == 'provalley' %}
+					form.inputs.weight.text(floatParse(item.itm.weight).toFixed(decimal_places_qty));
+				{% endif %}
+				calculate_totalcost();
+			}
+		});
 	}
 
 	function EditItemForm(form) {
@@ -47,6 +53,7 @@ $(function () {
 		this.inputs = {
 			linenbr: form.find('input[name=linenbr]'),
 			itemID: form.find('input[name=itemID]'),
+			weight: form.find('span.item-weight'),
 			description: form.find('input[name=description]'),
 			vendoritemID: form.find('input[name=vendoritemID]'),
 			whse: form.find('select[name=whse]'),
@@ -116,15 +123,30 @@ $(function () {
 ============================================================= */
 	$("body").on('change', '#edit-item-modal input[name=qty_ordered]', function(e) {
 		var input = $(this);
-		var value = parseFloat(input.val());
+		var value = floatParse(input.val());
 		input.val(value.toFixed(decimal_places_qty));
+		calculate_totalcost();
 	});
 
 	$("body").on('change', '#edit-item-modal input[name=cost]', function(e) {
 		var input = $(this);
-		var value = parseFloat(input.val());
+		var value = floatParse(input.val());
 		input.val(value.toFixed(decimal_places_cost));
+		calculate_totalcost();
 	});
+
+	function calculate_totalcost() {
+		var qty = floatParse($('#edit-item-modal input[name=qty_ordered]').val());
+		var cost = floatParse($('#edit-item-modal input[name=cost]').val());
+		qty = qty.toFixed(decimal_places_qty);
+		{% if page.config.company == 'provalley' %}
+			qty = qty * floatParse($('#edit-item-modal .item-weight').text());
+		{% endif %}
+		qty = qty.toFixed(decimal_places_qty);
+		cost = cost.toFixed(decimal_places_cost);
+		var total = qty * cost;
+		$('#edit-item-modal input#cost_total').val(total.toFixed(decimal_places_cost));
+	}
 
 	$("body").on('change', '#edit-item-modal input[name=vendoritemID]', function(e) {
 		e.preventDefault();
@@ -233,6 +255,15 @@ $(function () {
 
 		$.getJSON(url.toString(), function(xref) {
 			callback(xref);
+		});
+	}
+
+	function get_po_line(ponbr, linenbr, callback) {
+		var url = new URI('{{ page.jsonapiURL('map') }}');
+		url.addQuery('action', 'get-po-item').addQuery('ponbr', ponbr).addQuery('linenbr',linenbr);
+
+		$.getJSON(url.toString(), function(item) {
+			callback(item);
 		});
 	}
 
