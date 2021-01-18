@@ -191,7 +191,7 @@ class SearchInventory extends WireData implements Module {
 
 /* =============================================================
 	ProcessWire Module Functions
-============================================================= */s
+============================================================= */
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Search Warehouse Inventory',
