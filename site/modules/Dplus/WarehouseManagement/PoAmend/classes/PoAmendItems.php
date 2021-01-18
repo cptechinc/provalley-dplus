@@ -3,8 +3,9 @@
 use Propel\Runtime\ActiveQuery\Criteria;
 use Purl\Url;
 
+use PurchaseOrderDetailQuery, PurchaseOrderDetail;
 use PurchaseOrderDetailReceivingQuery, PurchaseOrderDetailReceiving;
-use ApInvoiceDetailQuery, ApInvoiceDetail;
+use PurchaseOrderDetailReceiptQuery, PurchaseOrderDetailReceipt;
 use WarehouseQuery, Warehouse;
 
 use EditPoDetailQuery, EditPoDetail;
@@ -37,34 +38,45 @@ class PoAmendItems extends WireData {
 		return boolval($q->count());
 	}
 
+	/**
+	 * Return All Items
+	 * @param  string $ponbr Purchase Order Number
+	 * @return EditPoDetail[]
+	 */
 	public function all($ponbr) {
 		return $this->query($ponbr)->find();
 	}
 
-	public function all_array($ponbr) {
-		$this->init_configs();
-		$js = [];
-		$items = $this->query($ponbr)->find();
+	/**
+	 * Return if Detail Line is Closed
+	 * @param  string $ponbr   Purchase Order Number
+	 * @param  int    $linenbr Line Number
+	 * @return bool
+	 */
+	public function is_closed($ponbr, $linenbr = 1) {
+		$q = $this->query_podetail($ponbr, $linenbr);
+		$q->select(PurchaseOrderDetail::get_aliasproperty('status'));
+		return $q->findOne() == PurchaseOrderDetail::STATUS_CLOSED;
+	}
 
-		foreach ($items as $item) {
-			$js[$item->linenbr] = array(
-				'linenbr'      => $item->linenbr,
-				'itemid'       => $item->itemid,
-				'description'  => $item->description,
-				'vendoritemid' => $item->vendoritemid,
-				'whseid'       => $item->whse,
-				'specialorder' => $item->specialorder,
-				'uom'          => $item->uom,
-				'qty' => array(
-					'ordered'  => number_format($item->qty_ordered, $this->configs->decimal_places_qty()),
-					'received' => $this->get_qty_received($ponbr, $item->linenbr),
-					'invoiced' => $this->get_qty_invoiced($ponbr, $item->linenbr),
-				),
-				'cost'         => number_format($item->cost, $this->configs->decimal_places_cost()),
-				'cost_total'   => number_format($item->cost_total, $this->configs->decimal_places_cost())
-			);
-		}
-		return $js;
+	/**
+	 * Return if Detail Line is Closed
+	 * @param  string $ponbr   Purchase Order Number
+	 * @param  int    $linenbr Line Number
+	 * @return bool
+	 */
+	public function has_received($ponbr, $linenbr = 1) {
+		return boolval($this->qty_received($ponbr, $linenbr));
+	}
+
+	/**
+	 * Return if Detail Line is Closed
+	 * @param  string $ponbr   Purchase Order Number
+	 * @param  int    $linenbr Line Number
+	 * @return bool
+	 */
+	public function has_receipt($ponbr, $linenbr = 1) {
+		return boolval($this->qty_receipt($ponbr, $linenbr));
 	}
 
 /* =============================================================
@@ -196,68 +208,16 @@ class PoAmendItems extends WireData {
 		$this->configs->init_configs();
 	}
 
-	/**
-	 * Returns Details for JS
-	 * @param  string $ponbr Purchase Order Number
-	 * @return array
-	 */
-	public function get_details_array($ponbr) {
-		$array = array();
-		$items = $this->query($ponbr);
-
-		$this->init_configs();
-
-		foreach ($items as $item) {
-			$array[$item->linenbr] = array(
-				'linenbr'      => $item->linenbr,
-				'itemid'       => $item->itemid,
-				'description'  => $item->description,
-				'vendoritemid' => $item->vendoritemid,
-				'whseid'       => $item->whse,
-				'specialorder' => $item->specialorder,
-				'uom'          => $item->uom,
-				'qty' => array(
-					'ordered'  => number_format($item->qty_ordered, $this->configs->decimal_places_qty()),
-					'received' => $this->get_qty_received($ponbr, $item->linenbr),
-					'invoiced' => $this->get_qty_invoiced($ponbr, $item->linenbr),
-				),
-				'cost'         => number_format($item->cost, $this->configs->decimal_places_cost()),
-				'cost_total'   => number_format($item->cost_total, $this->configs->decimal_places_cost())
-			);
-		}
-		return $array;
-	}
-
-	/**
-	 * Return Purchase Order Item Qty Received
-	 * @param  string $ponbr   Purchase Order Number
-	 * @param  int    $linenbr Line Number
-	 * @return float|int       Uses ConfigSo::decimal_places
-	 */
-	public function get_qty_received($ponbr, $linenbr) {
-		$q = PurchaseOrderDetailReceivingQuery::create();
-		$col = PurchaseOrderDetailReceiving::get_aliasproperty('qty_received');
-		$q->withColumn("SUM($col)", 'qty');
-		$q->select('qty');
+	public function query_podetail($ponbr, $linenbr) {
+		$q = PurchaseOrderDetailQuery::create();
 		$q->filterByPonbr($ponbr);
 		$q->filterByLinenbr($linenbr);
-		return number_format($q->findOne(), $this->configs->decimal_places_qty());
+		return $q;
 	}
 
-	/**
-	 * Return Purchase Order Item Qty Invoiced
-	 * @param  string $ponbr   Purchase Order Number
-	 * @param  int    $linenbr Line Number
-	 * @return float|int       Uses ConfigSo::decimal_places
-	 */
-	public function get_qty_invoiced($ponbr, $linenbr) {
-		$q = ApInvoiceDetailQuery::create();
-		$col = ApInvoiceDetail::get_aliasproperty('qty_received');
-		$q->withColumn("SUM($col)", 'qty');
-		$q->select('qty');
-		$q->filterByPonbr($ponbr);
-		$q->filterByLinenbr($linenbr);
-		return number_format($q->findOne(), $this->configs->decimal_places_qty());
+	public function podetail($ponbr, $linenbr) {
+		$q = $this->query_podetail($ponbr, $linenbr);
+		return $q->findOne();
 	}
 
 	/**
@@ -266,5 +226,40 @@ class PoAmendItems extends WireData {
 	 */
 	public function warehouses() {
 		return WarehouseQuery::create()->find();
+	}
+
+	/**
+	 * Return ITM item
+	 * @param  string $itemID Item ID
+	 * @return ItemMasterItem
+	 */
+	public function itmitem($itemID) {
+		return ItemMasterItemQuery::create()->findOneByItemid($itemID);
+	}
+
+	/**
+	 * Return Qty Received from the Database
+	 * @return float
+	 */
+	public function qty_received($ponbr, $linenbr = 1) {
+		$q = PurchaseOrderDetailReceivingQuery::create();
+		$q->withColumn('SUM(potdqtyrec)', 'qty');
+		$q->select('qty');
+		$q->filterByPonbr($ponbr);
+		$q->filterByLinenbr($linenbr);
+		return floatval($q->findOne());
+	}
+
+	/**
+	 * Return Qty Received from the Database
+	 * @return float
+	 */
+	public function qty_receipt($ponbr, $linenbr = 1) {
+		$q = PurchaseOrderDetailReceiptQuery::create();
+		$q->withColumn('SUM(pordqtyrec)', 'qty');
+		$q->select('qty');
+		$q->filterByPonbr($ponbr);
+		$q->filterByLinenbr($linenbr);
+		return floatval($q->findOne());
 	}
 }
