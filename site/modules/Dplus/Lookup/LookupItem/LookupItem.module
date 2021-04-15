@@ -6,6 +6,7 @@ use ItemMasterItemQuery, ItemMasterItem;
 use ConfigSysQuery, ConfigSys;
 use ItemXrefCustomerQuery, ItemXrefCustomer;
 use ItemXrefUpcQuery, ItemXrefUpc;
+use ItemXrefManufacturerQuery, ItemXrefManufacturer;
 
 /**
  * LookupItem
@@ -89,6 +90,39 @@ class LookupItem extends WireData implements Module {
 		$q = ItemXrefUpcQuery::create();
 		$q->filterByUpc($upc);
 		$q->select(ItemXrefUpc::get_aliasproperty('itemid'));
+
+		if ($q->count()) {
+			$this->lookup_itm($q->findOne());
+		}
+		return $this->exists;
+	}
+
+	/**
+	 * Returns if Short Item ID exists in the Item Master as
+	 * NOTE: Uses ConfigSys to find customer ID to use CXM
+	 * @param  string $itemID Short Item ID
+	 * @return void
+	 */
+	public function lookup_mxrfe_short($itemID) {
+		$this->source = 'itm';
+		$this->request = $itemID;
+		$custID = ConfigSysQuery::create()->findOne()->custid;
+		return $this->lookup_mxrfe($itemID, $custID);
+	}
+
+	/**
+	 * Looks up if Item ID exists in the ItemXrefCustomer table
+	 * @param  string $itemID Customer Item ID
+	 * @return void
+	 */
+	public function lookup_mxrfe($itemID, $custID) {
+		$this->source = empty($this->source) || $this->source == 'itm' ? 'mxrfe' : $this->source;
+		$this->request = empty($this->request) ? $itemID : $this->request;
+
+		$q = ItemXrefManufacturerQuery::create();
+		$q->select(ItemXrefManufacturer::get_aliasproperty('itemid'));
+		$q->filterByMnfrid($custID);
+		$q->filterByMnfritemid($itemID);
 
 		if ($q->count()) {
 			$this->lookup_itm($q->findOne());

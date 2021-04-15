@@ -112,7 +112,7 @@ class PoAmendItems extends WireData {
 		$values = $input->$rm;
 		$q = $this->query($values->text('ponbr'));
 		$count_before = $q->count();
-		$this->request_add_item($values->text('ponbr'), $values->text('itemID'), $values->int('qty'));
+		$this->request_add_item($values->text('ponbr'), $values->text('itemID'), $values->int('qty'), $values->float('cost'));
 		$count_after = $q->count();
 
 		if ($count_after > $count_before) {
@@ -173,12 +173,15 @@ class PoAmendItems extends WireData {
 	 * @param string $itemID Item ID
 	 * @param int    $qty    Qty
 	 */
-	public function request_add_item($ponbr, $itemID, int $qty = 1) {
+	public function request_add_item($ponbr, $itemID, int $qty = 1, float $cost = 0.00) {
 		$config = $this->wire('config');
 		$dplusdb = $this->wire('modules')->get('DplusOnlineDatabase')->db_name;
 		$data = array("DBNAME=$dplusdb", 'ADDPURCHASEORDERLINE', "PONBR=$ponbr", "ITEMID=$itemID", "QTY=$qty");
+		if ($cost) {
+			$data[] = "COST=$cost";
+		}
 		$requestor = $this->wire('modules')->get('DplusRequest');
-		$requestor->write_dplusfile($data, session_id());
+		$requestor->write_dplusfile($data, $this->sessionID);
 		$requestor->cgi_request($config->cgis['default'], $this->sessionID);
 	}
 

@@ -495,7 +495,7 @@ class SalesOrderEdit extends WireData implements Module {
 	 */
 	public function request_itemsearch($q) {
 		$order = $this->get_order_static($this->ordn);
-		$custID = SalesOrderQuery::create()->get_custid($ordn);
+		$custID = SalesOrderQuery::create()->get_custid($this->ordn);
 		$data = array("ITNOSRCH=$q", "CUSTID=$custID");
 		$this->request_dplus($data);
 	}

@@ -21,7 +21,7 @@ class LookupItemEntry extends LookupItem implements Module {
 		$this->message = '';
 	}
 
-	const LOOKUPS = array('cxm');
+	const LOOKUPS = array('cxm', 'mxrfe_short');
 
 	/**
 	 * Validates if string corresponds to an Item
@@ -64,6 +64,16 @@ class LookupItemEntry extends LookupItem implements Module {
 	 * @param  WireInput $input  Input Data
 	 * @return string
 	 */
+	public function lookup_input_mxrfe_short($itemID, WireInput $input) {
+		$this->lookup_mxrfe_short($itemID);
+	}
+
+	/**
+	 * Validates Item through CXM using provided Input Data
+	 * @param  string    $itemID Item ID
+	 * @param  WireInput $input  Input Data
+	 * @return string
+	 */
 	public function lookup_input_cxm($itemID, WireInput $input) {
 		$custID = $input->get->text('custID');
 		$shiptoID = $input->get->text('shiptoID');
@@ -72,6 +82,8 @@ class LookupItemEntry extends LookupItem implements Module {
 
 
 	private function customer_whseid($custID, $shiptoID = '') {
+		$validate_custid = $this->wire('modules')->get('LookupCustomer');
+
 		if ($validate_custid->lookup_customer($custID)) {
 			if ($shiptoID) {
 				$q = CustomerShiptoQuery::create();
@@ -111,14 +123,9 @@ class LookupItemEntry extends LookupItem implements Module {
 	}
 
 
-	/* =============================================================
-		ProcessWire Module Functions
-	============================================================= */
-	/**
-	 * ProcessWire Module Info
-	 *
-	 * @return void
-	 */
+/* =============================================================
+	ProcessWire Module Functions
+============================================================= */
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Item Entry Lookup Module',

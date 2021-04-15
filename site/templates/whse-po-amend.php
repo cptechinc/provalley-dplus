@@ -32,7 +32,6 @@ if ($values->ponbr) {
 
 		$page->js  .= $config->twig->render('warehouse/po-amend/po/item/js.twig', ['page' => $page, 'apo' => $apo, 'ponbr' => $ponbr]);
 		$page->js  .= $config->twig->render('purchase-orders/purchase-order/edit/lookup/js.twig', ['page' => $page]);
-
 	} else {
 		$page->headline = $page->title = "Purchase Order #$ponbr could not be found";
 		$page->body .= $config->twig->render('util/alert.twig', ['type' => 'danger', 'title' => "Purchase Order not found", 'iconclass' => 'fa fa-warning fa-2x', 'message' => "PO # $ponbr not found"]);
