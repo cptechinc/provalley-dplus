@@ -402,7 +402,8 @@ class DpagesMpo extends Dpages implements Module {
 		$this->addHook('User::can_edit_po', function($event) {
 			$user  = $event->object;
 			$ponbr = $event->arguments(0);
-			$event->return = $this->wire('modules')->get('PurchaseOrderEdit')->is_po_editable($ponbr);
+			// $event->return = $this->wire('modules')->get('PurchaseOrderEdit')->is_po_editable($ponbr);
+			$event->return = false;
 		});
 
 		$this->addHook('Page(pw_template=purchase-order-view)::po_editURL', function($event) {
