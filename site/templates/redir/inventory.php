@@ -33,7 +33,8 @@
 			// Requests Contents of bin
 			// Response: fills Invsearch table with records
 			$binID = $input->$rm->text('binID');
-			$data = array("DBNAME=$dplusdb", 'BININQUIRY', "BINID=$binID");
+			$binID = strtoupper($binID);
+			$data  = array("DBNAME=$dplusdb", 'BININQUIRY', "BINID=$binID");
 
 			if ($input->$rm->page) {
 				$page = $input->$rm->text('page');
@@ -96,7 +97,8 @@
 			} else {
 				$item = InvsearchQuery::create()->findOneByItemid(session_id(), $itemID);
 			}
-			$data = array("DBNAME=$dplusdb", "ITEMCARTONINIT", "ITEMID=$itemID", "WHSE=$whsesession->whseid", "BIN=$binID");
+			$binID = strtoupper($binID);
+			$data  = array("DBNAME=$dplusdb", "ITEMCARTONINIT", "ITEMID=$itemID", "WHSE=$whsesession->whseid", "BIN=$binID");
 
 			if ($item->is_lotted() || $item->is_serialized()) {
 				$data[] = "LOTSER=$item->lotserial";
@@ -267,6 +269,7 @@
 			$ponbr = $input->$rm->text('ponbr');
 			$q = strtoupper($input->$rm->text('scan'));
 			$binID = $input->$rm->text('binID');
+			$binID = strtoupper($binID);
 			$data = array("DBNAME=$dplusdb", 'RECEIVINGSEARCH', "PONBR=$ponbr", "QUERY=$q", "BIN=$binID");
 
 			if ($input->$rm->page) {
@@ -376,8 +379,8 @@
 			$q->filterByLotserial($lotserial);
 			$q->filterByBin($binID);
 			$item = $q->findOne();
-
-			$data = array("DBNAME=$dplusdb", 'RECEIVEREMOVELOT', "PONBR=$ponbr", "LINENBR=$linenbr", "LOTSERIAL=$item->lotserial", "BIN=$item->bin");
+			$binID = strtoupper($binID);
+			$data = array("DBNAME=$dplusdb", 'RECEIVEREMOVELOT', "PONBR=$ponbr", "LINENBR=$linenbr", "LOTSERIAL=$item->lotserial", "BIN=$binID");
 
 			$url = new Purl\Url($pages->get('pw_template=whse-receiving')->url);
 			$url->query->set('ponbr', $ponbr);
@@ -401,6 +404,7 @@
 			$q->filterByLotserial($lotserial);
 			$q->filterByBin($binID);
 			$item = $q->findOne();
+			$binID = strtoupper($binID);
 
 			$data = array("DBNAME=$dplusdb", 'EDITRECEIVEDQTY', "PONBR=$ponbr", "LINENBR=$linenbr", "LOTSERIAL=$item->lotserial", "BIN=$binID", "QTY=$qty", "DATE=$date");
 

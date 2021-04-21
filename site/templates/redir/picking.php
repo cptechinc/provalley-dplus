@@ -74,8 +74,8 @@
 			$data = array("DBNAME=$dplusdb", 'PACKING');
 			break;
 		case 'select-bin':
-			$bin = strtoupper($input->$requestmethod->text('binID'));
-			$data = array("DBNAME=$dplusdb", "SETBIN=$bin");
+			$binID = strtoupper($input->$requestmethod->text('binID'));
+			$data = array("DBNAME=$dplusdb", "SETBIN=$binID");
 			$session->loc = $input->$requestmethod->text('page');
 			break;
 		case 'next-bin':

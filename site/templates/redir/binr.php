@@ -98,8 +98,8 @@
 				$data[] = "LOTNBR=$lotnbr";
 			}
 			$data[] = "QTY=$qty";
-			$data[] = "FROMBIN=$frombin";
-			$data[] = "TOBIN=$tobin";
+			$data[] = strtoupper("FROMBIN=$frombin");
+			$data[] = strtoupper("TOBIN=$tobin");
 			$url = new Purl\Url($input->$requestmethod->text('page'));
 
 			if ($url->query->has('tobin')) {
@@ -111,8 +111,8 @@
 			$session->binr = array('frombin' => $frombin, 'tobin' => $tobin);
 			break;
 		case 'move-bin-contents';
-			$frombin = $input->$requestmethod->text('from-bin');
-			$tobin = $input->$requestmethod->text('to-bin');
+			$frombin = strtoupper($input->$requestmethod->text('from-bin'));
+			$tobin = strtoupper($input->$requestmethod->text('to-bin'));
 			$data = array("DBNAME=$dplusdb", 'MOVEBIN', "FROMBIN=$frombin", "TOBIN=$tobin");
 			$session->loc = $input->$requestmethod->text('page');
 			$session->bincm = array('tobin' => $tobin, 'frombin' => $frombin);

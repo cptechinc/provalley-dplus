@@ -443,6 +443,7 @@ class PickingProvalley extends WireData implements Module {
 	public function send_removepickeditem_request($recordnumber, $debug = false) {
 		$dplusdb = $this->wire('modules')->get('DplusOnlineDatabase')->db_name;
 		$whseitempick = WhseitempickQuery::create()->filterBySessionid($sessionID)->filterByOrdn($whsesession->ordernbr)->filterByRecordnumber($recordnumber)->findOne();
+		$whseitempick->bin = strtoupper($whseitempick->bin);
 		$data = array("DBNAME=$dplusdb", 'PICKITEMREMOVE', "ORDERNBR=$this->ordn", "LINENBR=$whseitempick->linenbr", "ITEMID=$whseitempick->itemid");
 		$data[] = "BIN=$whseitempick->bin|LOTSERIAL=$whseitempick->lotserial|QTY=$whseitempick->qty";
 
@@ -464,6 +465,7 @@ class PickingProvalley extends WireData implements Module {
 			$barcodes = $orderitem->get_userpickedtotalsbylotserial();
 
 			foreach ($barcodes as $barcode) {
+				$barcode->bin = strtoupper($barcode->bin);
 				$data[] = "BIN=$barcode->bin|LOTSERIAL=$barcode->lotserial|QTY=$barcode->qty";
 			}
 		} else {
@@ -473,6 +475,7 @@ class PickingProvalley extends WireData implements Module {
 				$qty = $barcode['qty'];
 				$binID     = str_pad($barcode['bin'], 8, ' ');
 				$lotserial = str_pad('', 20, ' ');
+				$binID     = strtoupper($binID);
 				$data[]    = "BIN=$binID|LOTSERIAL=$lotserial|QTY=$qty";
 			}
 		}
