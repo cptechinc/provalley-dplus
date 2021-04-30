@@ -134,6 +134,7 @@ class PickingProvalley extends WireData implements Module {
 		$itemID = $values->text('itemID');
 		$lotserial = $values->text('lotserial');
 		$binID     = $values->text('binID');
+		$scan     = $values->text('scan');
 
 		if ($this->items->is_itemid_onorder($itemID) === false) {
 			$this->session->pickingerror = "$itemID is not on the order";
@@ -443,7 +444,7 @@ class PickingProvalley extends WireData implements Module {
 	public function send_removepickeditem_request($recordnumber, $debug = false) {
 		$dplusdb = $this->wire('modules')->get('DplusOnlineDatabase')->db_name;
 		$whseitempick = WhseitempickQuery::create()->filterBySessionid($sessionID)->filterByOrdn($whsesession->ordernbr)->filterByRecordnumber($recordnumber)->findOne();
-		$whseitempick->bin = strtoupper($whseitempick->bin);
+		$whseitempick->setBin(strtoupper($whseitempick->bin));
 		$data = array("DBNAME=$dplusdb", 'PICKITEMREMOVE', "ORDERNBR=$this->ordn", "LINENBR=$whseitempick->linenbr", "ITEMID=$whseitempick->itemid");
 		$data[] = "BIN=$whseitempick->bin|LOTSERIAL=$whseitempick->lotserial|QTY=$whseitempick->qty";
 
@@ -465,7 +466,7 @@ class PickingProvalley extends WireData implements Module {
 			$barcodes = $orderitem->get_userpickedtotalsbylotserial();
 
 			foreach ($barcodes as $barcode) {
-				$barcode->bin = strtoupper($barcode->bin);
+				$barcode->setBin(strtoupper($barcode->bin));
 				$data[] = "BIN=$barcode->bin|LOTSERIAL=$barcode->lotserial|QTY=$barcode->qty";
 			}
 		} else {
