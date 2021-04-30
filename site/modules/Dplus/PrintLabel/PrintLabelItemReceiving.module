@@ -110,7 +110,7 @@ class PrintLabelItemReceiving extends PrintLabelItem implements Module {
 		$data = array("DBNAME=$dplusdb", "RECEIVELABELPRINT", "PONBR=$ponbr", "LINENBR=$linenbr");
 		if ($labelsession->lotserial != 'all') {
 			$data[] = "LOTSERIAL=$labelsession->lotserial";
-			$data[] = "BIN=".strtoupper($labelsession->bin)
+			$data[] = "BIN=".strtoupper($labelsession->bin);
 		} else {
 			$data[] = "LOTSERIAL=ALL";
 		}
