@@ -10,7 +10,7 @@ $values = $input->$rm;
 if ($values->action) {
 	$eso->process_input($input);
 
-	$url = $values->exit ? $page->so_viewURL($values->text('ordn')) : $page->so_editURL($values->text('ordn'));
+	$url = $values->exit || $values->text('action') == 'delete-order' ? $page->so_viewURL($values->text('ordn')) : $page->so_editURL($values->text('ordn'));
 	$session->redirect($url, $http301 = false);
 }
 

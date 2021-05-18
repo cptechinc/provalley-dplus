@@ -264,6 +264,15 @@ class DpagesMso extends Dpages implements Module {
 			$event->return = $url->getUrl();
 		});
 
+		$this->addHook('Page::delete_orderURL', function($event) {
+			$p = $event->object;
+			$ordn = $event->arguments(0);
+			$url = new Url($this->wire('pages')->get('pw_template=sales-order-edit')->url);
+			$url->query->set('action', 'delete-order');
+			$url->query->set('ordn', $ordn);
+			$event->return = $url->getUrl();
+		});
+
 		$this->addHook('Page::view_orderURL', function($event) {
 			$ordn = $event->arguments(0);
 			$event->return = $this->get_salesorder_viewURL($ordn);
