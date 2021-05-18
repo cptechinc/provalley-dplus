@@ -7,6 +7,11 @@
 			<th scope="col">
 				Description
 			</th>
+			{% if pricing %}
+				<th scope="col">
+					Available
+				</th>
+			{% endif %}
 		</tr>
 	</thead>
 	{% if results.count() %}
@@ -23,6 +28,12 @@
 							{{ item.desc2 }}
 						</small>
 					</td>
+					{% if pricing %}
+						{% set itempricing = pricing.get_pricing(item.itemid) %}
+						<td>
+							{{ itempricing.qty }}
+						</td>
+					{% endif %}
 				</tr>
 			{% endfor %}
 		{% else %}

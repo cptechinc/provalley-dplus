@@ -73,6 +73,7 @@
 			$filter_itm = $modules->get('FilterItemMaster');
 			$filter_itm->init_query($user);
 			$filter_itm->search($q);
+			$filter_itm->ii();
 			$query = $filter_itm->get_query();
 			$items = $query->paginate($input->pageNum, 10);
 			$pricingm->request_multiple(array_keys($items->toArray(ItemMasterItem::get_aliasproperty('itemid'))));
