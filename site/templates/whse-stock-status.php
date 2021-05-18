@@ -4,9 +4,7 @@
 	$m_json = $modules->get('JsonDataFiles');
 	$xls = $modules->get('XlsStockStatus');
 
-	if (!$m_json->file_exists(session_id(), $page->pw_template) || $values->refresh) {
-		$xls->request_json();
-	}
+	$xls->request_json();
 
 	$json = $m_json->get_file(session_id(), $page->pw_template);
 
