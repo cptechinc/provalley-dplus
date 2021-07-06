@@ -141,10 +141,10 @@ class JsonDataFiles extends WireData implements Module {
 
 		if (file_exists($jsonfile)) {
 			$json = json_decode(file_get_contents($jsonfile), true);
-
 			if (empty($json)) {
 				$this->success = false;
 				$this->error = "The $jsoncode JSON contains errors, JSON ERROR: ". json_last_error();
+				$json = ['error' => true, 'errormsg' => "The $jsoncode JSON contains errors, JSON ERROR: ". json_last_error()];
 			}
 		} else {
 			$this->success = false;
