@@ -13,6 +13,7 @@ use WhseitemphysicalcountQuery, Whseitemphysicalcount;
 
 use ItemMasterItemQuery, ItemMasterItem;
 use InvLotQuery, InvLot;
+use WhseLotserialQuery, WhseLotserial;
 
 /**
  * PickingInventoryManager
