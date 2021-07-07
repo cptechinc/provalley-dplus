@@ -3,7 +3,7 @@
 use Purl\Url;
 use Propel\Runtime\ActiveQuery\Criteria;
 
-use DocumentFoldersQuery, DocumentFolders;
+use DocumentFolderQuery, DocumentFolder;
 use DocumentQuery, Document;
 use SalesHistoryQuery, SalesHistory;
 use SalesOrderQuery, SalesOrder;
@@ -60,7 +60,7 @@ class DocumentManagement extends WireData implements Module {
 		$docs_query->filterByFilename($filename);
 		$document = $docs_query->findOne();
 
-		$folder = DocumentFoldersQuery::create()->findOneByFolder($folder);
+		$folder = DocumentFolderQuery::create()->findOneByFolder($folder);
 		return "$folder->directory/$filename";
 	}
 
@@ -91,7 +91,7 @@ class DocumentManagement extends WireData implements Module {
 		$docs_query->filterByFilename($filename);
 		$document = $docs_query->findOne();
 
-		$folder = DocumentFoldersQuery::create()->findOneByFolder($folder);
+		$folder = DocumentFolderQuery::create()->findOneByFolder($folder);
 		$this->move_file($folder->directory, $document->filename, $destination);
 	}
 
