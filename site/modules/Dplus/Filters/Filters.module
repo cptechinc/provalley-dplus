@@ -1,5 +1,7 @@
 <?php namespace ProcessWire;
 
+include_once(__DIR__.'/vendor/autoload.php');
+
 class Filters extends WireData implements Module {
 
 	const MODULE_ALIASES = array(
