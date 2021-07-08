@@ -47,7 +47,7 @@ class Activity extends IiFunction {
 		$page    = self::pw('page');
 		$page->headline = "II: $data->itemID Activity";
 		$html = '';
-		$html .= self::breadCrumbs();;
+		$html .= self::breadCrumbs();
 		$html .= self::display($data);
 		return $html;
 	}
@@ -56,10 +56,13 @@ class Activity extends IiFunction {
 	2. Data Requests
 ============================================================= */
 	public static function requestJson($vars) {
-		$fields = ['itemID|text', 'date|date', 'sessionID|text'];
+		$fields = ['itemID|text', 'date|date', 'sessionID|text', 'lotserial|text'];
 		self::sanitizeParametersShort($vars, $fields);
 		$vars->sessionID = empty($vars->sessionID) === false ? $vars->sessionID : session_id();
 		$data = ['IIACTIVITY', "ITEMID=$vars->itemID"];
+		if ($vars->lotnbr) {
+			$data[] = "LOTSERIAL=$vars->lotserial";
+		}
 		if ($vars->date) {
 			$dateYmd = date(self::DATE_FORMAT_DPLUS, $vars->date);
 			$data[] = "DATE=$dateYmd";
@@ -101,7 +104,7 @@ class Activity extends IiFunction {
 		if ($jsonm->exists(self::JSONCODE)) {
 			if (self::jsonItemidMatches($json['itemid'], $data->itemID) === false || $json['date'] != date(self::DATE_FORMAT_DPLUS, $data->timestamp)) {
 				$jsonm->delete(self::JSONCODE);
-				$session->redirect(self::activityUrl($data->itemID, $data->date, $refresh = true), $http301 = false);
+				$session->redirect(self::lotActivityUrl($data->itemID, $data->date, $refresh = true), $http301 = false);
 			}
 			$session->setFor('ii', 'activity', 0);
 			return true;
@@ -124,7 +127,6 @@ class Activity extends IiFunction {
 		$json   = $jsonm->getFile(self::JSONCODE);
 		$config = self::pw('config');
 
-
 		if ($jsonm->exists(self::JSONCODE) === false) {
 			return $config->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => 'Activity File Not Found']);
 		}
@@ -139,7 +141,7 @@ class Activity extends IiFunction {
 		return $config->twig->render('items/ii/activity/display.twig', ['item' => self::getItmItem($data->itemID), 'json' => $json, 'module_json' => $jsonm->jsonm, 'docm' => $docm, 'date' => $data->date]);
 	}
 
-	private static function dateForm($data) {
+	public static function dateForm($data) {
 		self::sanitizeParametersShort($data, ['itemID|text']);
 		$config = self::pw('config');
 		$page   = self::pw('page');
