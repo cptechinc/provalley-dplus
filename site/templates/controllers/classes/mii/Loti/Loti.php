@@ -1,4 +1,4 @@
-<?php namespace Controllers\Mii;
+<?php namespace Controllers\Mii\Loti;
 // Purl URI Library
 use Purl\Url as Purl;
 // Propel ORM Ljbrary
