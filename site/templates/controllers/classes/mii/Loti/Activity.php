@@ -41,8 +41,6 @@ class Activity extends AbstractController {
 		return self::dateForm($data);
 	}
 
-
-
 	private static function activity($data) {
 		self::getData($data);
 		self::initHooks();
@@ -72,7 +70,7 @@ class Activity extends AbstractController {
 	}
 
 	private static function setupData($data) {
-		$data->itemID    = self::getLotItemid($lotnbr);
+		$data->itemID    = self::getLotItemid($data->lotnbr);
 		$data->lotserial = $data->lotnbr;
 		$data->date = $data->startdate;
 	}
@@ -93,6 +91,10 @@ class Activity extends AbstractController {
 		$jsonm = IIActivity::getJsonModule();
 		$json   = $jsonm->getFile(IIActivity::JSONCODE);
 		$session = self::pw('session');
+
+		if ($jsonm->exists(IIActivity::JSONCODE) === false) {
+			$session->redirect(self::activityUrl($data->lotnbr, $data->startdate, $refresh = true));
+		}
 
 		if ($jsonm->exists(IIActivity::JSONCODE)) {
 			if (IIActivity::jsonItemidMatches($json['itemid'], $data->itemID) === false || $json['date'] != date(IIActivity::DATE_FORMAT_DPLUS, $data->timestamp)) {
