@@ -3,11 +3,11 @@
 
 	use Controllers\Mii\Loti;
 
-	Loti::initHooks();
+	Loti\Loti::initHooks();
 
 	$routes = [
-		['GET',  '', Loti::class, 'index'],
-		['GET',  'activity/', Loti::class, 'index'],
+		['GET',  '', Loti\Loti::class, 'index'],
+		['GET',  'activity/', Loti\Activity::class, 'index'],
 	];
 
 
