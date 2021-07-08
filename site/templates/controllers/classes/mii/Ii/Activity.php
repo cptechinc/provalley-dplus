@@ -168,6 +168,7 @@ class Activity extends IiFunction {
 
 	public static function init() {
 		$m = self::pw('modules')->get('DpagesMii');
+
 		$m->addHook('Page(pw_template=ii-item)::documentListUrl', function($event) {
 			$page      = $event->object;
 			$itemID    = $event->arguments(0);
