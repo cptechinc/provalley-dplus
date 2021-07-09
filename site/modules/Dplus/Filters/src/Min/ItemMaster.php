@@ -2,6 +2,7 @@
 // Dplus Model
 use ItemMasterItemQuery, ItemMasterItem as Model;
 use WarehouseInventoryQuery, WarehouseInventory;
+use WhseLotserialQuery, WhseLotserial;
 // ProcessWire Classes
 use ProcessWire\WireData, ProcessWire\WireInput, ProcessWire\Page;
 // Dplus Filters
@@ -43,6 +44,12 @@ class ItemMaster extends AbstractFilter {
  			->filterByStatus(WarehouseInventory::STATUS_ACTIVE)
  		->endUse();
  	}
+
+	public function inStock() {
+		$q = WhseLotserialQuery::create()->select(WhseLotserial::aliasproperty('itemid'));
+		$q->distinct();
+		$this->query->filterByItemid($q->find()->toArray());
+	}
 
 /* =============================================================
 	Misc Query Functions
