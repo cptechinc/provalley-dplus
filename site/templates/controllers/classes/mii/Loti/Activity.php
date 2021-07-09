@@ -14,8 +14,9 @@ use Mvc\Controllers\AbstractController;
 use Controllers\Mii\Ii\Activity as IiActivity;
 use Controllers\Mii\Ii\Documents as IiDocuments;
 
-class Activity extends AbstractController {
-	private static $upcx;
+use Controllers\Mii\Loti\Base;
+
+class Activity extends Base {
 
 	public static function index($data) {
 		$fields = ['lotnbr|text', 'startdate|date', 'refresh|bool'];
@@ -25,7 +26,7 @@ class Activity extends AbstractController {
 			// TODO redirect
 		}
 
-		$filter = new LotFilter();
+		$filter = self::getFilter();
 
 		if ($filter->query->filterByLotnbr($data->lotnbr)->count() === 0) {
 			return self::invalidLotDisplay($data);
@@ -50,14 +51,8 @@ class Activity extends AbstractController {
 /* =============================================================
 	Data Retrieval
 ============================================================= */
-	private static function getLot($lotnbr) {
-		$filter = new LotFilter();
-		$filter->query->filterByLotnbr($lotnbr);
-		return $filter->query->findOne();
-	}
-
 	private static function getLotItemid($lotnbr) {
-		$filter = new LotFilter();
+		$filter = self::getFilter();
 		$filter->query->select(InvLot::aliasproperty('itemid'));
 		$filter->query->filterByLotnbr($lotnbr);
 		return $filter->query->findOne();
@@ -133,9 +128,7 @@ class Activity extends AbstractController {
 		$page->refreshurl   = self::activityUrl($data->lotnbr, $refresh = true);
 		$page->lastmodified = $jsonm->lastModified(IIActivity::JSONCODE);
 
-		$filter = new LotFilter();
-		$filter->query->filterByLotnbr($data->lotnbr);
-		$lot = $filter->query->findOne();
+		$lot = self::getLot($data->lotnbr);
 
 		$html  = self::breadcrumbs($data);
 		$html .= $config->twig->render('mii/loti/activity/display.twig', ['json' => $json, 'module_json' => $jsonm->jsonm, 'docm' => $docm, 'lot' => $lot]);
@@ -168,10 +161,6 @@ class Activity extends AbstractController {
 		$html .= '<h3> Enter Starting Activity Date</h3>';
 		$html .= self::pw('config')->twig->render('mii/loti/activity/date-form.twig', ['lotnbr' => $data->lotnbr, 'startdate' => $startdate]);
 		return $html;
-	}
-
-	private static function breadcrumbs($data) {
-		return self::pw('config')->twig->render('mii/loti/bread-crumbs.twig');
 	}
 
 /* =============================================================
