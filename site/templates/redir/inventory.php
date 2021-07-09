@@ -436,6 +436,15 @@
 			//$url->query->set('ponbr', $ponbr);
 			$session->loc = $url->getUrl();
 			break;
+		case 'submit-receipt-close':
+			// Request:  Sends Receipt to be posted
+			// Response: POSTS receipt
+			$ponbr    = $input->$rm->text('ponbr');
+			$data = array("DBNAME=$dplusdb", 'FINISHRECEIPT', "PONBR=$ponbr", 'CLOSE');
+			$url = new Purl\Url($pages->get('pw_template=whse-receiving')->url);
+			//$url->query->set('ponbr', $ponbr);
+			$session->loc = $url->getUrl();
+			break;
 	}
 
 	if (!empty($data)) {
