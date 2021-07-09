@@ -5,120 +5,103 @@ use Purl\Url as Purl;
 use Propel\Runtime\Util\PropelModelPager;
 // Dplus Model
 use InvLotQuery, InvLot;
+// Dpluso Model
+use InvsearchQuery, Invsearch;
 // ProcessWire Classes, Modules
-use ProcessWire\Page;
+use ProcessWire\Page, ProcessWire\SearchInventory, ProcessWire\DpagesMii;
 // Dplus Filters
 use Dplus\Filters\Min\LotMaster as LotFilter;
 // Mvc Controllers
 use Mvc\Controllers\AbstractController;
-use Controllers\Mii\Ii\Activity as IiActivity;
-use Controllers\Mii\Ii\Documents as IiDocuments;
 
-class Activity extends AbstractController {
-	private static $upcx;
-
+class Loti extends AbstractController {
+/* =============================================================
+	Index, Logic Functions
+============================================================= */
 	public static function index($data) {
-		$fields = ['lotnbr|text', 'startdate|date', 'refresh|bool'];
+		$fields = ['scan|text'];
 		self::sanitizeParametersShort($data, $fields);
 
-		if (empty($data->lotnbr)) {
-			// TODO redirect
+		if (empty($data->scan) === false) { // HANDLE SEARCHING UPC, LOTNBR, ITEMID
+			return self::scan($data);
 		}
-
-		$filter = new LotFilter();
-
-		if ($filter->query->filterByLotnbr($data->lotnbr)->count() === 0) {
-			return self::invalidLotDisplay($data);
-		}
-
-		if (empty($data->startdate) === false) {
-			if ($data->refresh) {
-				self::requestJson($data);
-				self::pw('session')->redirect(self::activityUrl($data->lotnbr, $data->date), $http301 = false);
-			}
-			return self::activity($data);
-		}
-		return self::dateForm($data);
+		return self::list($data);
 	}
 
-	private static function activity($data) {
-		self::getData($data);
-		self::initHooks();
+	private static function scan($data) {
+		self::sanitizeParametersShort($data, ['scan|text']);
+		$inventory = self::pw('modules')->get('SearchInventory');
+		$inventory->requestSearch($data->scan);
+		$count = $inventory->count_lotserials_distinct();
 
-		$page    = self::pw('page');
-		$page->headline = "LOTI: $data->lotnbr Activity";
+		if ($count == 1) {
+			$result = $inventory->query()->findOne();
+			self::pw('session')->redirect(self::lotActivityUrl($result->lotserial), $http301 = false);
+		}
 
-		$html = '';
-		$html .= self::display($data);
+		if ($count == 0) {
+			self::scanRedirectIfLotFound($data);
+		}
+		return self::scanResults($data, $inventory);
+	}
+
+	private static function scanRedirectIfLotFound($data) {
+		$filter = new LotFilter();
+
+		if ($filter->exists($data->scan)) {
+			self::pw('session')->redirect(self::lotActivityUrl($data->scan), $http301 = false);
+		}
+
+		if ($filter->existsLotRef($data->scan)) {
+			$filter->filterByLotRef($data->scan);
+			$lot = $filter->findOne();
+			self::pw('session')->redirect(self::lotActivityUrl($lot->lotnbr), $http301 = false);
+		}
+	}
+
+	private static function scanResults($data, SearchInventory $inventory) {
+		$lotnbrs = $inventory->query()->select(Invsearch::get_aliasproperty('lotserial'))->find()->toArray();
+		$filter = new LotFilter();
+		$filter->query->filterByLotnbr($lotnbrs);
+		$lots = $filter->query->paginate(self::pw('input')->pageNum, sizeof($lotnbrs));
+		$html  = self::breadcrumbs($data);
+		$html .= self::formAndlistDisplay($data, $lots);
+		return $html;
+	}
+
+	private static function list($data) {
+		$data = self::sanitizeParametersShort($data, ['q|text']);
+		$page = self::pw('page');
+		$filter = new LotFilter();
+		$filter->inStock();
+
+		if ($data->q) {
+			$filter->search(strtoupper($data->q));
+		}
+
+		$lots = $filter->query->paginate(self::pw('input')->pageNum, 10);
+
+		$html  = self::breadcrumbs($data);
+		$html .= self::formAndlistDisplay($data, $lots);
 		return $html;
 	}
 
 /* =============================================================
-	Data Retrieval
+	URL Functions
 ============================================================= */
-	private static function getLot($lotnbr) {
-		$filter = new LotFilter();
-		$filter->query->filterByLotnbr($lotnbr);
-		return $filter->query->findOne();
-	}
+	/**
+	 * Return URL to view / edit UPC
+	 * @param  string $upc    UPC Code
+	 * @param  string $itemID ** Optional
+	 * @return string
+	 */
+	public static function lotActivityUrl($lotnbr, $startdate = '') {
+		$url = new Purl(self::pw('pages')->get("pw_template=loti")->url);
+		$url->path->add('activity');
+		$url->query->set('lotnbr', $lotnbr);
 
-	private static function getLotItemid($lotnbr) {
-		$filter = new LotFilter();
-		$filter->query->select(InvLot::aliasproperty('itemid'));
-		$filter->query->filterByLotnbr($lotnbr);
-		return $filter->query->findOne();
-	}
-
-	private static function setupData($data) {
-		$data->itemID    = self::getLotItemid($data->lotnbr);
-		$data->lotserial = $data->lotnbr;
-		$data->date = $data->startdate;
-	}
-
-	private static function requestJson($data) {
-		self::setupData($data);
-		IiActivity::requestJson($data);
-	}
-
-	private static function getData($data) {
-		self::sanitizeParametersShort($data, ['lotnbr|text', 'startdate|date']);
-		self::setupData($data);
-
-		if ($data->startdate) {
-			$data->timestamp = $data->startdate;
-			$data->startdate = date(IIActivity::DATE_FORMAT, $data->timestamp);
-		}
-		$jsonm = IIActivity::getJsonModule();
-		$json   = $jsonm->getFile(IIActivity::JSONCODE);
-		$session = self::pw('session');
-
-		if ($jsonm->exists(IIActivity::JSONCODE) === false) {
-			$session->redirect(self::activityUrl($data->lotnbr, $data->startdate, $refresh = true));
-		}
-
-		if ($jsonm->exists(IIActivity::JSONCODE)) {
-			if (IIActivity::jsonItemidMatches($json['itemid'], $data->itemID) === false || $json['date'] != date(IIActivity::DATE_FORMAT_DPLUS, $data->timestamp)) {
-				$jsonm->delete(IIActivity::JSONCODE);
-				$session->redirect(self::activityUrl($data->itemID, $data->startdate, $refresh = true), $http301 = false);
-			}
-			$session->setFor('loti', 'activity', 0);
-			return true;
-		}
-
-		if ($session->getFor('loti', 'activity') > 3) {
-			return false;
-		}
-		$session->setFor('loti', 'activity', ($session->getFor('loti', 'activity') + 1));
-		$session->redirect(self::activityUrl($data->itemID, $data->startdate, $refresh = true), $http301 = false);
-	}
-
-/* =============================================================
-	URLs
-============================================================= */
-	public static function activityUrl($lotnbr, $startdate = '', $refreshdata = false) {
-		$url = new Purl(Loti::lotActivityUrl($lotnbr, $startdate));
-		if ($refreshdata) {
-			$url->query->set('refresh', 'true');
+		if ($startdate) {
+			$url->query->set('startdate', $startdate);
 		}
 		return $url->getUrl();
 	}
@@ -126,71 +109,50 @@ class Activity extends AbstractController {
 /* =============================================================
 	Display Functions
 ============================================================= */
-	private static function display($data) {
-		$jsonm = IIActivity::getJsonModule();
-		$json   = $jsonm->getFile(IIActivity::JSONCODE);
+	/**
+	 * Return Lot List
+	 * @param  object           $data
+	 * @param  PropelModelPager $lots InvLot[]
+	 * @return string           HTML
+	 */
+	private static function listDisplay($data, PropelModelPager $lots) {
 		$config = self::pw('config');
 
-		if ($jsonm->exists(IIActivity::JSONCODE) === false) {
-			return $config->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => 'Activity File Not Found']);
-		}
-
-		if ($json['error']) {
-			return $config->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => $json['errormsg']]);
-		}
-		$page = self::pw('page');
-		$docm = IiDocuments::getDocFinderIi();
-		$page->refreshurl   = self::activityUrl($data->lotnbr, $data->startdate, $refresh = true);
-		$page->lastmodified = $jsonm->lastModified(IIActivity::JSONCODE);
-		return $config->twig->render('mii/loti/activity/display.twig', ['json' => $json, 'module_json' => $jsonm->jsonm, 'docm' => $docm, 'date' => $data->date]);
-	}
-
-	private static function invalidLotDisplay($data) {
-		return self::pw('config')->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => "$data->lotnbr not found in Lot Master"]);
-	}
-
-	private static function dateForm($data) {
-		self::sanitizeParametersShort($data, ['lotnbr|text']);
-		$config = self::pw('config');
-		$page   = self::pw('page');
-		$iio    = self::pw('modules')->get('Iio');
-
-		$options = $iio->useriio(self::pw('user')->loginid);
-		$startdate = date(IiActivity::DATE_FORMAT);
-
-		if ($options->daysactivity > 0) {
-			$startdate = date(IiActivity::DATE_FORMAT, strtotime("-$options->daysactivity days"));
-		}
-
-		if (intval($options->dateactivity) > 0) {
-			$startdate = date(IiActivity::DATE_FORMAT, strtotime($options->dateactivity));
-		}
-
-		$page->headline = "Lot $data->lotnbr Activity";
 		$html = '';
-		$html .= '<h3> Enter Starting Activity Date</h3>';
-		$html .= self::pw('config')->twig->render('mii/loti/activity/date-form.twig', ['lotnbr' => $data->lotnbr, 'startdate' => $startdate]);
+		$html .= $config->twig->render('mii/loti/list.twig', ['lots' => $lots]);
+		$html .= $config->twig->render('util/paginator/propel.twig', ['pager' => $lots]);
 		return $html;
 	}
 
-/* =============================================================
-	URL Functions
-============================================================= */
+	/**
+	 * Return Scan form and Lot List Combined
+	 * @param  object           $data
+	 * @param  PropelModelPager $lots InvLot[]
+	 * @return string           HTML
+	 */
+	private static function formAndlistDisplay($data, PropelModelPager $lots) {
+		$html = '';
+		$html .= self::scanForm($data);
+		$html .= self::listDisplay($data, $lots);
+		return $html;
+	}
 
+	private static function scanForm($data) {
+		return self::pw('config')->twig->render('mii/loti/forms/scan.twig');
+	}
+
+	private static function breadcrumbs($data) {
+		return self::pw('config')->twig->render('mii/loti/bread-crumbs.twig');
+	}
+
+/* =============================================================
+	Hooks
+============================================================= */
 	public static function initHooks() {
 		$m = self::pw('modules')->get('DpagesMii');
 
-		$m->addHook('Page(pw_template=loti)::documentListUrl', function($event) {
-			$page      = $event->object;
-			// $itemID    = $event->arguments(0);
-			// $type      = $event->arguments(1);
-			// $reference = $event->arguments(2);
-			//
-			// $url = new Purl(Documents::documentsUrl($itemID, 'ACT'));
-			// $url->query->set('type', $type);
-			// $url->query->set('reference', $reference);
-			// $event->return = $url->getUrl();
-			$event->return = $page->url;
+		$m->addHook('Page(pw_template=loti)::lotActivityUrl', function($event) {
+			$event->return = self::lotActivityUrl($event->arguments(0));
 		});
 	}
 }
