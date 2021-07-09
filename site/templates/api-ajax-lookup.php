@@ -24,11 +24,21 @@
 			break;
 		case 'items':
 			$filter = $modules->get('FilterItemMaster');
+			$filter = new Dplus\Filters\Min\ItemMaster();
 			break;
 	}
 
 	$filter->init_query();
 	$filter->filter_input($input);
+
+	switch ($page->ajaxcode) {
+		case 'items':
+			if ($input->get->offsetExists('ordering')) {
+				$filter->active();
+				$filter->inStock();
+			}
+			break;
+	}
 
 	if ($input->get->q) {
 		$filter->search($q);
@@ -40,6 +50,7 @@
 	$twigloader = $config->twig->getLoader();
 	$results = $query->paginate($input->pageNum, 10);
 	$count   = $results->getNbResults();
+
 
 
 
