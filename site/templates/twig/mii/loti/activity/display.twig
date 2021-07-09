@@ -10,7 +10,10 @@
 				{{ input.get.text('lotnbr') }}
 			</div>
 			<div class="col-sm-4">
-				<b>Item ID:</b> {{ json['itemid'] }} - {{ itm.description(json['itemid']) }}
+				<b>Item ID:</b> {{ json['itemid'] }} - {{ lot.item.description }}
+			</div>
+			<div class="col-sm-2">
+				<b>Date:</b> {{ lot.expiredate|convertdate }}
 			</div>
 			<div class="col-sm-3">
 				Activity

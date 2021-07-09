@@ -133,8 +133,12 @@ class Activity extends AbstractController {
 		$page->refreshurl   = self::activityUrl($data->lotnbr, $refresh = true);
 		$page->lastmodified = $jsonm->lastModified(IIActivity::JSONCODE);
 
+		$filter = new LotFilter();
+		$filter->query->filterByLotnbr($data->lotnbr);
+		$lot = $filter->query->findOne();
+
 		$html  = self::breadcrumbs($data);
-		$html .= $config->twig->render('mii/loti/activity/display.twig', ['json' => $json, 'module_json' => $jsonm->jsonm, 'docm' => $docm, 'itm' => self::pw('modules')->get('Itm')]);
+		$html .= $config->twig->render('mii/loti/activity/display.twig', ['json' => $json, 'module_json' => $jsonm->jsonm, 'docm' => $docm, 'lot' => $lot]);
 		return $html;
 	}
 
