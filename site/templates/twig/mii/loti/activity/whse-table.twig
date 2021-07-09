@@ -1,6 +1,8 @@
 <table class="table table-striped table-sm">
 	<thead>
-		<th>Docs</th>
+		{% if 100 == 1 %}
+			<th>Docs</th>
+		{% endif %}
 		{% for column in json['columns'] %}
 			<th class="{{ module_json.get_justifyclass(column['headingjustify']) }}">
 				{{ column['heading'] }}

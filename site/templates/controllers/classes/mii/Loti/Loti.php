@@ -95,14 +95,10 @@ class Loti extends AbstractController {
 	 * @param  string $itemID ** Optional
 	 * @return string
 	 */
-	public static function lotActivityUrl($lotnbr, $startdate = '') {
+	public static function lotActivityUrl($lotnbr) {
 		$url = new Purl(self::pw('pages')->get("pw_template=loti")->url);
 		$url->path->add('activity');
 		$url->query->set('lotnbr', $lotnbr);
-
-		if ($startdate) {
-			$url->query->set('startdate', $startdate);
-		}
 		return $url->getUrl();
 	}
 
