@@ -79,12 +79,20 @@ abstract class AbstractFilter extends WireData {
 		$this->_initQuery();
 	}
 
+	public function init_query() {
+		$this->initQuery();
+	}
+
 	/**
 	 * Returns Query
 	 * @return Query
 	 */
 	public function query() {
 		return $this->query;
+	}
+
+	public function get_query() {
+		return $this->query();
 	}
 
 	/**
@@ -104,6 +112,15 @@ abstract class AbstractFilter extends WireData {
 	public function filterInput(WireInput $input) {
 		$this->_filterInput($input);
 		return $this;
+	}
+
+	/**
+	 * Filter Query with Input Data
+	 * @param  WireInput $input Input Data
+	 * @return self
+	 */
+	public function filter_input(WireInput $input) {
+		return $this->filterInput($input);
 	}
 
 	/**
@@ -129,6 +146,10 @@ abstract class AbstractFilter extends WireData {
 			$tablecolumn = $model::aliasproperty($orderbycolumn);
 			$this->query->sortBy($tablecolumn, $sort);
 		}
+	}
+
+	public function apply_sortby(Page $page) {
+		$this->sortBy($page);
 	}
 
 	/**
