@@ -50,22 +50,30 @@ class LotReturn extends Base {
 	}
 
 	static private function scan($data) {
-		self::requestJson($data);
-		self::getData($data);
+		self::requestSearch($data);
+		$exists = self::verifyData($data);
+		if ($exists === false) {
+			return self::pw('config')->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => 'Could not find JSON']);
+		}
+		$json = self::getJsonModule()->getFile(self::JSONCODE);
+		return self::scanResult($json);
 	}
 
 /* =============================================================
 	Data Processing
 ============================================================= */
-	private static function getData($data) {
+	static private function verifyData($data) {
 		self::sanitizeParametersShort($data, ['scan|text']);
-		self::setupData($data);
 
-		$jsonm = IIActivity::getJsonModule();
+		$jsonm = self::getJsonModule();
 		$json   = $jsonm->getFile(self::JSONCODE);
 		$session = self::pw('session');
 
 		if ($jsonm->exists(self::JSONCODE) === false) {
+			$session->setFor('whse-lotreturn', $data->scan, ($session->getFor('whse-lotreturn', $data->scan) + 1));
+			if ($session->getFor('whse-lotreturn', $data->scan) > 3) {
+				return false;
+			}
 			$session->redirect(self::scanUrl($data->scan, $refresh = true));
 		}
 
@@ -81,7 +89,7 @@ class LotReturn extends Base {
 		if ($session->getFor('whse-lotreturn', $data->scan) > 3) {
 			return false;
 		}
-		$session->setFor('whse-lotreturn', $data->scan, ($session->getFor('loti', $data->scan) + 1));
+		$session->setFor('whse-lotreturn', $data->scan, ($session->getFor('whse-lotreturn', $data->scan) + 1));
 		$session->redirect(self::scanUrl($data->scan, $refresh = true), $http301 = false);
 	}
 
@@ -90,12 +98,46 @@ class LotReturn extends Base {
 /* =============================================================
 	URLs
 ============================================================= */
+	static public function scanUrl($scan = '') {
+		$url = new Purl(self::pw('pages')->get('pw_template=whse-lot-return')->url);
+		if ($scan) {
+			$url->query->set('scan', $scan);
+		}
+		return $url->getUrl();
+	}
 
 /* =============================================================
 	Displays
 ============================================================= */
-	static public function scanForm($data) {
+	static private function scanForm($data) {
 		return self::pw('config')->twig->render('mii/loti/forms/scan.twig');
+	}
+
+	static private function scanResult($data, array $json) {
+		$config = self::pw('config');
+
+		if ($json['error']) {
+			return $config->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => $json['message']]);
+		}
+		$html  = '';
+		$html .= $config->twig->render('warehouse/inventory/lot-return/scanned-lot-form.twig');
+		return $html;
+	}
+
+/* =============================================================
+	Requests
+============================================================= */
+	static private function requestSearch($data) {
+		self::sendRequest(['LOTRETURN', "QUERY=$data->scan"]);
+	}
+
+	static private function sendRequest(array $data, $sessionID = '') {
+		$sessionID = $sessionID ? $sessionID : session_id();
+		$db = self::pw('modules')->get('DplusOnlineDatabase')->db_name;
+		$data = array_merge(["DBNAME=$db"], $data);
+		$requestor = self::pw('modules')->get('DplusRequest');
+		$requestor->write_dplusfile($data, $sessionID);
+		$requestor->cgi_request(self::pw('config')->cgis['warehouse'], $sessionID);
 	}
 
 /* =============================================================
