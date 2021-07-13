@@ -79,7 +79,8 @@ class JsonDataFiles extends WireData implements Module {
 			),
 			'sales' => array(
 				'orders' => 'soopenorder'
-			)
+			),
+			'lotreturn' => 'lotreturn'
 		)
 	);
 
