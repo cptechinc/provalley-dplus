@@ -466,7 +466,7 @@ class Receiving extends Base {
 /* =============================================================
 	Validator, Module Getters
 ============================================================= */
-	static public function validateUserPermission(user $user = nul) {
+	static public function validateUserPermission(User $user = null) {
 		if (empty($user)) {
 			$user = self::pw('user');
 		}
