@@ -3,6 +3,10 @@
 use stdClass;
 // Purl Library
 use Purl\Url as Purl;
+// Dplus Model
+use SalesOrderQuery, SalesOrder;
+use PurchaseOrderQuery, PurchaseOrder;
+use ItemMasterItemQuery, ItemMasterItem;
 // ProcessWire Classes, Modules
 use ProcessWire\Page, ProcessWire\Module, ProcessWire\WireData;
 use Processwire\SearchInventory, Processwire\WarehouseManagement,ProcessWire\HtmlWriter;
@@ -53,10 +57,29 @@ class LotReturn extends Base {
 		self::requestSearch($data);
 		$exists = self::verifyData($data);
 		if ($exists === false) {
-			return self::pw('config')->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => 'Could not find JSON']);
+			$html  = self::pw('config')->twig->render('util/bootstrap/alert.twig', ['type' => 'danger', 'headerclass' => 'text-white', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => 'Could not find JSON']);
+			$html .= '<div class="mb-3"></div>';
+			$html .= self::scanForm($data);
+			return $html;
 		}
+		return self::scanResult($data);
+	}
+
+	static private function scanResult($data) {
 		$json = self::getJsonModule()->getFile(self::JSONCODE);
-		return self::scanResult($json);
+		if ($json['error']) {
+			return $config->twig->render('util/bootstrap/alert.twig', ['type' => 'danger', 'headerclass' => 'text-white', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => $json['message']]);
+		}
+		self::pw('page')->headline = "Lot Return: " . $json['item']['lotref'];
+		return self::scannedLotDisplay($data, $json);
+	}
+
+	static private function getLotData(array $json) {
+		$lotdata = new WireData();
+		$lotdata->so   = SalesOrderQuery::create()->findOneByOrdernumber($json['item']['salesorder']['ordernumber']);
+		$lotdata->po   = PurchaseOrderQuery::create()->findOneByPonbr($json['item']['purchaseorder']['ponbr']);
+		$lotdata->item = ItemMasterItemQuery::create()->findOneByItemid($json['item']['itemid']);
+		return $lotdata;
 	}
 
 /* =============================================================
@@ -113,14 +136,11 @@ class LotReturn extends Base {
 		return self::pw('config')->twig->render('mii/loti/forms/scan.twig');
 	}
 
-	static private function scanResult($data, array $json) {
-		$config = self::pw('config');
+	static private function scannedLotDisplay($data, array $json) {
+		$config  = self::pw('config');
 
-		if ($json['error']) {
-			return $config->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => $json['message']]);
-		}
 		$html  = '';
-		$html .= $config->twig->render('warehouse/inventory/lot-return/scanned-lot-form.twig');
+		$html .= $config->twig->render('warehouse/inventory/lot-return/scanned-lot.twig', ['json' => $json]);
 		return $html;
 	}
 

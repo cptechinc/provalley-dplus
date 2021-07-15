@@ -1,0 +1,45 @@
+{% extends 'util/bootstrap/html/modal.twig' %}
+
+{% set title = 'Returning ' ~ json['item']['lotnbr'] ~ ' to stock' %}
+{% set id = 'restock-modal' %}
+
+
+{% block modal_body %}
+	<form action="">
+		<input type="hidden" name="lotnbr" value="{{ json['item']['lotnbr'] }}">
+		<input type="hidden" name="ordn" value="{{ json['item']['salesorder']['ordernumber'] }}">
+		<input type="hidden" name="ponbr" value="{{ json['item']['salesorder']['ponbr'] }}">
+
+		<label for="binID">Bin ID</label>
+		{% include 'util/bootstrap/form/input-group.twig' with {
+					'inputgroup': {
+						'type': 'prepend',
+						'attributes': {},
+						'input': {
+							'name': 'binID',
+							'value': ,
+							'attributes': {
+								'placeholder': '',
+								'aria-label':  'Bin ID',
+							}
+						},
+						'button': {
+							'colorclass': 'btn-secondary',
+							'text': 'fa fa-search'|icon,
+							'attributes': {
+								'title': 'Search Bins',
+								'data-toggle': 'modal',
+								'data-target': '#ajax-modal',
+								'data-lookupurl': page.search_lookupURL('vendors'),
+								'data-input': '#binID'
+							}
+						}
+					}
+				}
+			%}
+	</form>
+{% endblock %}
+
+{% block modal_footer %}
+
+{% endblock %}
