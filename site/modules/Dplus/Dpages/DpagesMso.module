@@ -304,6 +304,14 @@ class DpagesMso extends Dpages implements Module {
 			$shiptoID = $event->arguments(1);
 			$event->return = $this->wire('modules')->get('DpagesMci')->get_ci_customershiptoURL($custID, $shiptoID);
 		});
+
+		$this->addHook('Page::printInvoiceUrl', function($event) {
+			$ordn = $event->arguments(0);
+			$url = new Url($this->wire('pages')->get('template=dplus-menu,name=mso')->child('template=redir')->url);
+			$url->query->set('action', 'print-invoice');
+			$url->query->set('ordn', $ordn);
+			$event->return = $url->getUrl();
+		});
 	}
 
 	public function init_cxm_hooks() {

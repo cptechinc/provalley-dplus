@@ -13,6 +13,10 @@
 			<a href="{{ page.get_printURL() }}" class="btn btn-primary" target="_blank" aria-label="View Printable" title="View Printable">
 				<i class="fa fa-print" aria-hidden="true"></i> View Print
 			</a>
+			&nbsp;
+			<a href="{{ page.printInvoiceUrl(order.ordernumber) }}" class="btn btn-primary" target="_blank" aria-label="Print Invoice" title="Print Invoice">
+				<i class="fa fa-print" aria-hidden="true"></i> Print Invoice
+			</a>
 		</div>
 		<div class="col text-right">
 			{% if order.has_tracking() %}
