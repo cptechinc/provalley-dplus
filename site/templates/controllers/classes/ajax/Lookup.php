@@ -13,6 +13,7 @@ use Dplus\Filters\Min\ItemGroup     as ItemGroupFilter;
 use Dplus\Filters\Mar\Customer      as CustomerFilter;
 use Dplus\Filters\Map\Vendor        as VendorFilter;
 use Dplus\Filters\Map\Vxm           as VxmFilter;
+use Dplus\Filters\Min\WarehouseBin           as WarehouseBinFilter;
 // Mvc Controllers
 use Mvc\Controllers\AbstractController;
 
@@ -36,7 +37,7 @@ class Lookup extends AbstractController {
 		$filter = $wire->wire('modules')->get('FilterInvTariffCodes');
 		$filter->init_query();
 		$page->headline = "Tariff Codes";
-		self::moduleFilterResults($filter, $wire, $data);
+		self::moduleFilterResults($filter, $data);
 	}
 
 	/**
@@ -52,7 +53,7 @@ class Lookup extends AbstractController {
 		$filter = $wire->wire('modules')->get('FilterInvMsdsCodes');
 		$filter->init_query();
 		$page->headline = "Msds Codes";
-		self::moduleFilterResults($filter, $wire, $data);
+		self::moduleFilterResults($filter, $data);
 	}
 
 	/**
@@ -68,7 +69,7 @@ class Lookup extends AbstractController {
 		$filter = $wire->wire('modules')->get('FilterMsoFreightCodes');
 		$filter->init_query();
 		$page->headline = "Freight Codes";
-		self::moduleFilterResults($filter, $wire, $data);
+		self::moduleFilterResults($filter, $data);
 	}
 
 	/**
@@ -84,7 +85,7 @@ class Lookup extends AbstractController {
 		$page = $wire->wire('page');
 		$filter = new VxmFilter();
 		$page->headline = "VXM";
-		self::filterResults($filter, $wire, $data);
+		self::filterResults($filter, $data);
 	}
 
 	/**
@@ -100,7 +101,23 @@ class Lookup extends AbstractController {
 		$filter = $wire->wire('modules')->get('FilterWarehouses');
 		$filter->init_query();
 		$page->headline = "Warehouses";
-		self::moduleFilterResults($filter, $wire, $data);
+		self::moduleFilterResults($filter, $data);
+	}
+
+	/**
+	 * Search VXM
+	 * @param  object $data
+	 *                     whseID Warehouse ID
+	 *                     q        Search Term
+	 * @return void
+	 */
+	public static function warehouseBins($data) {
+		self::sanitizeParameters($data, self::FIELDS_LOOKUP);
+		self::sanitizeParametersShort($data, ['whseID|text']);
+		$page = self::pw('page');
+		$filter = new WarehouseBinFilter();
+		$page->headline = "Warehouse Bins";
+		self::filterResults($filter, $data);
 	}
 
 	/**
@@ -116,7 +133,7 @@ class Lookup extends AbstractController {
 		$filter = $wire->wire('modules')->get('FilterDplusUsers');
 		$filter->init_query();
 		$page->headline = "Users";
-		self::moduleFilterResults($filter, $wire, $data);
+		self::moduleFilterResults($filter, $data);
 	}
 
 	/**
@@ -180,7 +197,7 @@ class Lookup extends AbstractController {
 		$filter = $wire->wire('modules')->get('FilterItemMaster');
 		$filter->init_query();
 		$wire->wire('page')->headline = "Item Master";
-		self::moduleFilterResults($filter, $wire, $data);
+		self::moduleFilterResults($filter, $data);
 	}
 
 	/**
@@ -232,7 +249,7 @@ class Lookup extends AbstractController {
 			$filter->search($data->q);
 			$page->headline = "Searching for $data->q";
 		}
-		self::filterResults($filter, $wire, $data);
+		self::filterResults($filter, $data);
 	}
 
 	/**
@@ -252,13 +269,13 @@ class Lookup extends AbstractController {
 			$filter->search($data->q);
 			$page->headline = "Searching for $data->q";
 		}
-		self::filterResults($filter, $wire, $data);
+		self::filterResults($filter, $data);
 	}
 
-	private static function moduleFilterResults(Module $filter, ProcessWire $wire, $data) {
-		$input = $wire->wire('input');
-		$page = $wire->wire('page');
-		$filter->filter_input($wire->wire('input'));
+	private static function moduleFilterResults(Module $filter, $data) {
+		$input = self::pw('input');
+		$page  = self::pw('page');
+		$filter->filter_input($input);
 
 		if ($data->q) {
 			$filter->search($data->q);
@@ -272,7 +289,7 @@ class Lookup extends AbstractController {
 	private static function filterResults(Filter $filter, $data) {
 		$input = self::pw('input');
 		$page  = self::pw('page');
-		$filter->filterInput(self::pw('input'));
+		$filter->filterInput($input);
 
 		if ($data->q) {
 			$filter->search($data->q);
