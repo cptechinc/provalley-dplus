@@ -185,6 +185,20 @@ class DpagesApi extends Dpages implements Module {
 		);
 	}
 
+	public function lookupURL($code) {
+		$url = $this->wire('pages')->get("template=ajax-lookups")->httpUrl;
+		$url .= "$code/";
+		return $url;
+	}
+
+	public function jsonapiURL($api) {
+		$url = $this->wire('pages')->get("template=ajax-json")->httpUrl;
+		if ($api) {
+			$url .= rtrim($api,'/').'/';
+		}
+		return $url;
+	}
+
 	public function init() {
 		$this->addHook("Page::jsonapiURL", function($event) {
 			$api = $event->arguments(0);
@@ -195,6 +209,16 @@ class DpagesApi extends Dpages implements Module {
 		$this->addHook("Page::search_lookupURL", function($event) {
 			$ajaxcode = $event->arguments(0);
 			$event->return = $this->wire('pages')->get("template=api-ajax,ajaxcode=$ajaxcode")->httpUrl;
+		});
+
+		$this->addHook("Page::searchLookupUrl", function($event) {
+			$ajaxcode = $event->arguments(0);
+			$event->return = $this->lookupURL($ajaxcode);
+		});
+
+		$this->addHook("Page::jsonApiUrl", function($event) {
+			$api = $event->arguments(0);
+			$event->return = $this->jsonapiURL($api);
 		});
 	}
 }
