@@ -14,6 +14,8 @@ use Processwire\SearchInventory, Processwire\WarehouseManagement,ProcessWire\Htm
 use Dplus\Configs;
 // Dplus Validators
 use Dplus\CodeValidators\Mpo as MpoValidator;
+// Dplus Filters
+use Dplus\Filters;
 // Mvc Controllers
 use Controllers\Wm\Base;
 
@@ -45,10 +47,17 @@ class LotReturn extends Base {
 
 		switch ($data->action) {
 			case 'search-inventory':
-				self::redirect(self::receivingScanUrl($data->ponbr, $data->scan, $data->binID), $http301 = false);
+				self::redirect(self::scanUrl($data->scan), $http301 = false);
+				break;
+			case 'return-lot':
+				$success = self::returnLot($data);
+				if ($success === false) {
+					self::redirect(self::scanUrl($data->scan), $http301 = false);
+				}
+				self::redirect(self::scanUrl(), $http301 = false);
 				break;
 			default:
-				self::redirect(self::receivingUrl($data->ponbr), $http301 = false);
+				self::redirect(self::scanUrl(), $http301 = false);
 				break;
 		}
 	}
@@ -68,9 +77,11 @@ class LotReturn extends Base {
 	static private function scanResult($data) {
 		$json = self::getJsonModule()->getFile(self::JSONCODE);
 		if ($json['error']) {
-			return $config->twig->render('util/bootstrap/alert.twig', ['type' => 'danger', 'headerclass' => 'text-white', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => $json['message']]);
+			return self::pw('config')->twig->render('util/bootstrap/alert.twig', ['type' => 'danger', 'headerclass' => 'text-white', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => $json['message']]);
 		}
 		self::pw('page')->headline = "Lot Return: " . $json['item']['lotref'];
+		self::pw('page')->js .= self::pw('config')->twig->render('warehouse/inventory/lot-return/scanned-lot/js.twig');
+		self::pw('config')->scripts->append(self::getFileHasher()->getHashUrl('scripts/lib/jquery-validate.js'));
 		return self::scannedLotDisplay($data, $json);
 	}
 
@@ -80,6 +91,22 @@ class LotReturn extends Base {
 		$lotdata->po   = PurchaseOrderQuery::create()->findOneByPonbr($json['item']['purchaseorder']['ponbr']);
 		$lotdata->item = ItemMasterItemQuery::create()->findOneByItemid($json['item']['itemid']);
 		return $lotdata;
+	}
+
+	static private function returnLot($data) {
+		self::sanitizeParametersShort($data, ['lotnbr|text', 'ordn|text', 'ponbr|text', 'whseID|text', 'binID|text', 'restock|bool']);
+		if (empty($data->lotnbr)) {
+			return false;
+		}
+
+		if ($data->restock === true) {
+			$filter = new Filters\Min\WarehouseBin();
+			if ($filter->exists($data->whseID, $data->binID) === false) {
+				return false;
+			}
+		}
+		self::requestLotReturn($data);
+		return true;
 	}
 
 /* =============================================================
@@ -149,6 +176,18 @@ class LotReturn extends Base {
 ============================================================= */
 	static private function requestSearch($data) {
 		self::sendRequest(['LOTRETURN', "QUERY=$data->scan"]);
+	}
+
+	static private function requestLotReturn($data) {
+		$restock = $data->restock ? 'Y' : 'N';
+		$vars = ['LOTRETACTION', "RESTOCK=$restock"];
+		$vars[] = "SALESORDER=$data->ordn";
+		$vars[] = "PURCHORDER=$data->ordn";
+
+		if ($data->restock === true) {
+			$vars[] = "BINID=$data->binID";
+		}
+		self::sendRequest($vars);
 	}
 
 	static private function sendRequest(array $data, $sessionID = '') {
