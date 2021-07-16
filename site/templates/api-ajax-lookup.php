@@ -22,10 +22,23 @@
 		case 'warehouses':
 			$filter = $modules->get('FilterWarehouses');
 			break;
+		case 'items':
+			$filter = $modules->get('FilterItemMaster');
+			$filter = new Dplus\Filters\Min\ItemMaster();
+			break;
 	}
 
 	$filter->init_query();
 	$filter->filter_input($input);
+
+	switch ($page->ajaxcode) {
+		case 'items':
+			if ($input->get->offsetExists('ordering')) {
+				$filter->active();
+				$filter->inStock();
+			}
+			break;
+	}
 
 	if ($input->get->q) {
 		$filter->search($q);
@@ -38,10 +51,23 @@
 	$results = $query->paginate($input->pageNum, 10);
 	$count   = $results->getNbResults();
 
+
+
+
 	switch ($page->ajaxcode) {
 		case 'vxm':
 			$vendorID = $input->get->text('vendorID');
 			$page->body .= $config->twig->render("api/lookup/$page->ajaxcode/search.twig", ['page' => $page, 'results' => $results, 'datamatcher' => $modules->get('RegexData'), 'vendorID' => $vendorID, 'q' => $q]);
+			break;
+		case 'items':
+			$pricingm = $modules->get('ItemPricing');
+			$pricingm->request_multiple(array_keys($results->toArray(ItemMasterItem::get_aliasproperty('itemid'))));
+
+			if ($twigloader->exists("api/lookup/$page->ajaxcode/search.twig")) {
+				$page->body .= $config->twig->render("api/lookup/$page->ajaxcode/search.twig", ['page' => $page, 'results' => $results, 'datamatcher' => $modules->get('RegexData'), 'q' => $q, 'pricing' => $pricingm]);
+			} else {
+				$page->body = $config->twig->render('util/alert.twig', ['type' => 'danger', 'title' => "Error", 'iconclass' => 'fa fa-warning fa-2x', 'message' => "$page->ajaxcode lookup does not exist"]);
+			}
 			break;
 		default:
 			if ($twigloader->exists("api/lookup/$page->ajaxcode/search.twig")) {

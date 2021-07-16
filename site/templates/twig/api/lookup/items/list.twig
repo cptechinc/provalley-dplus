@@ -1,0 +1,46 @@
+<table class="table table-striped" id="items-table">
+	<thead>
+		<tr>
+			<th scope="col">
+				Item ID
+			</th>
+			<th scope="col">
+				Description
+			</th>
+			{% if pricing %}
+				<th scope="col">
+					Available
+				</th>
+			{% endif %}
+		</tr>
+	</thead>
+	{% if results.count() %}
+			{% for item in results %}
+				<tr>
+					<td>
+						<a href="#" class="link item-link" data-itemid="{{ item.itemid }}" data-description="{{ item.description }}" data-description2="{{ item.description2 }}">
+							<strong>{{ item.itemid }}</strong>
+						</a>
+					</td>
+					<td class="{{ datamatcher.string(item.name, q) ? 'highlight' : '' }}">
+						<small>
+							{{ item.desc }} <br>
+							{{ item.desc2 }}
+						</small>
+					</td>
+					{% if pricing %}
+						{% set itempricing = pricing.get_pricing(item.itemid) %}
+						<td>
+							{{ itempricing.qty }}
+						</td>
+					{% endif %}
+				</tr>
+			{% endfor %}
+		{% else %}
+			<tr>
+				<td colspan="7" class="bg-secondary text-white text-center">
+					No Results found
+				</td>
+			</tr>
+		{% endif %}
+</table>

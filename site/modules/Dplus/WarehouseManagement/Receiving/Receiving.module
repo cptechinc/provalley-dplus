@@ -301,5 +301,14 @@ class Receiving extends WireData implements Module {
 			$url->query->set('ponbr', $ponbr);
 			$event->return = $url->getUrl();
 		});
+
+
+		$this->addHook('Page(pw_template=whse-receiving)::submitReceiptCloseURL', function($event) {
+			$url = new Url($this->wire('pages')->get('template=redir, redir_file=inventory')->url);
+			$ponbr    = $event->arguments(0);
+			$url->query->set('action', 'submit-receipt-close');
+			$url->query->set('ponbr', $ponbr);
+			$event->return = $url->getUrl();
+		});
 	}
 }

@@ -63,7 +63,10 @@
 			include __DIR__ . "/$template.php";
 		}
 	} else {
-		$modules->get('DplusRequest')->self_request($page->parent->child('template=redir')->url."?action=$action&sessionID=".session_id());
+		$request = $modules->get('DplusRequest');
+		$db = $modules->get('DplusOnlineDatabase');
+		$request->write_dplusfile(["DBNAME=$db->db_name", 'PICKUNGUIDED'], session_id());
+		$request->cgi_request($config->cgis['warehouse'], session_id()) ;
 		$page->formurl = $page->parent->child('template=redir')->url;
 		$page->body = $config->twig->render('warehouse/picking/sales-order-form.twig', ['page' => $page]);
 	}

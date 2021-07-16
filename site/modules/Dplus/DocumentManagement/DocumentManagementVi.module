@@ -2,8 +2,8 @@
 
 use Purl\Url;
 
-use DocumentFoldersQuery, DocumentFolders;
-use DocumentsQuery, Documents;
+use DocumentFolderQuery, DocumentFolder;
+use DocumentQuery, Document;
 
 /**
  * Document Management VI
@@ -11,8 +11,6 @@ use DocumentsQuery, Documents;
  * Handles VI Documents Hook Functions
  */
 class DocumentManagementVi extends DocumentManagement implements Module {
-
-
 
 /* =============================================================
 	URL Functions

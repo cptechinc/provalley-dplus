@@ -55,7 +55,7 @@
 					$page->body .= $config->twig->render('warehouse/picking/provalley/scan/scan-form.twig', ['page' => $page]);
 				}
 			} else {
-				$query_phys = $pickingsession->inventory->get_inventory_scan_query($scan, $includepack = false);
+				$query_phys = $pickingsession->inventory->get_inventory_scan_query($scan, $includepack = true);
 
 				if ($query_phys->count() == 1) {
 					$item = $query_phys->findOne();

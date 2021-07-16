@@ -6,6 +6,7 @@ use ItemMasterItemQuery, ItemMasterItem;
 use ConfigSysQuery, ConfigSys;
 use ItemXrefCustomerQuery, ItemXrefCustomer;
 use ItemXrefUpcQuery, ItemXrefUpc;
+use ItemXrefManufacturerQuery, ItemXrefManufacturer;
 
 /**
  * LookupItem
@@ -23,6 +24,7 @@ class LookupItem extends WireData implements Module {
 		$this->itemID  = '';
 		$this->request = '';
 		$this->source  = '';
+		$this->count   = 0;
 	}
 
 	/**
@@ -91,6 +93,56 @@ class LookupItem extends WireData implements Module {
 		$q->select(ItemXrefUpc::get_aliasproperty('itemid'));
 
 		if ($q->count()) {
+			$this->lookup_itm($q->findOne());
+		}
+		return $this->exists;
+	}
+
+	/**
+	 * Returns if Short Item ID exists in the Item Master as
+	 * NOTE: Uses ConfigSys to find customer ID to use CXM
+	 * @param  string $itemID Short Item ID
+	 * @return void
+	 */
+	public function lookup_mxrfe_short($itemID) {
+		$this->source = 'itm';
+		$this->request = $itemID;
+		$custID = ConfigSysQuery::create()->findOne()->custid;
+		return $this->lookup_mxrfe($itemID, $custID);
+	}
+
+	/**
+	 * Looks up if Item ID exists in the ItemXrefCustomer table
+	 * @param  string $itemID Customer Item ID
+	 * @return void
+	 */
+	public function lookup_mxrfe($itemID, $mnfrID) {
+		$this->source  = 'mxrfe';
+		$this->request = empty($this->request) ? $itemID : $this->request;
+
+		$q = ItemXrefManufacturerQuery::create();
+		$q->select(ItemXrefManufacturer::get_aliasproperty('itemid'));
+		$q->filterByMnfrid($mnfrID);
+		$q->filterByMnfritemid($itemID);
+
+		$this->count = $q->count();
+
+		if ($q->count()) {
+			$this->lookup_itm($q->findOne());
+		}
+		return $this->exists;
+	}
+
+	public function lookup_prefixed($itemID) {
+		$this->source  = 'itm-wildcard';
+		$this->request = empty($this->request) ? $itemID : $this->request;
+
+		$q = ItemMasterItemQuery::create();
+		$q->select(ItemMasterItem::get_aliasproperty('itemid'));
+		$q->filterByItemid("%$itemID%", Criteria::LIKE);
+
+		$this->count = $q->count();
+		if ($q->count() == 1) {
 			$this->lookup_itm($q->findOne());
 		}
 		return $this->exists;

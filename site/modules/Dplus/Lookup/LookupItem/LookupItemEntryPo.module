@@ -41,8 +41,18 @@ class LookupItemEntryPo extends LookupItem implements Module {
 
 		if (!$this->exists) {
 			$vendorID = $input->get->text('vendorID');
-			$this->validate_vxm($vendorID, $itemID);
+			$vendoritemID = $itemID;
+			$this->validate_vxm($vendorID, $vendoritemID, $itemID);
 		}
+
+		if (!$this->exists) {
+			$vendorID = $input->get->text('vendorID');
+			$this->lookup_mxrfe($itemID, $vendorID);
+		}
+		if (!$this->exists) {
+			$this->lookup_prefixed($itemID);
+		}
+
 		return $this->data;
 	}
 
@@ -52,13 +62,13 @@ class LookupItemEntryPo extends LookupItem implements Module {
 	 * @param  string $vendoritemID Vendor Item ID
 	 * @return void
 	 */
-	public function validate_vxm($vendorID, $vendoritemID) {
+	public function validate_vxm($vendorID, $vendoritemID, $itemID) {
 		$vxm = $this->wire('modules')->get('XrefVxm');
-		$this->exists = $vxm->xref_exists($vendorID, $vendoritemID);
+		$this->exists = $vxm->xref_exists($vendorID, $vendoritemID, $itemID);
 		$this->source = 'vxm';
 
 		if ($this->exists) {
-			$xref = $vxm->xref($vendorID, $vendoritemID);
+			$xref = $vxm->xref($vendorID, $vendoritemID, $itemID);
 			$this->itemID = $xref->itemid;
 		}
 	}

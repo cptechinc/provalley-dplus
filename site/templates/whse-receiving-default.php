@@ -131,8 +131,7 @@
 				}
 
 				if (!$input->get->scan) {
-					$href = $page->submit_receiptURL($ponbr);
-					$page->body .= $html->a("href=$href|class=btn btn-success", $html->icon('fa fa-floppy-o') . " Post");
+					$page->body .= $config->twig->render('warehouse/inventory/receiving/po-actions.twig', ['ponbr' => $ponbr]);
 				}
 
 				$page->body .= $config->twig->render('warehouse/inventory/bins-modal.twig', ['warehouse' => $warehouse]);

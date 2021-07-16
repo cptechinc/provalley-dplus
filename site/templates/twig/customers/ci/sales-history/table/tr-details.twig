@@ -12,15 +12,15 @@
 {% include 'util/screen-formatter/tr-labels.twig' with {'section': 'detail'} %}
 
 {% for detail in invoice['details'] %}
-
 	{% include 'util/screen-formatter/tr-section-rows.twig' with {'section': 'detail', 'record': detail} %}
 
 	{% if detail['lotserial']|length > 0 %}
-		{% include 'util/screen-formatter/tr-labels.twig' with {'section': 'lotserial', 'trclass': 'lotserial collapse show'} %}
-
-		{% for lot in detail['lotserial'] %}
-			{% include 'util/screen-formatter/tr-section-rows.twig' with {'section': 'lotserial', 'record': lot, 'trclass': 'lotserial collapse show'} %}
-		{% endfor %}
+		<tbody class="lotserial collapse" id="{{ [invoice['Ordn'], detail['itemid']]|join('-')|attrJS }}-lotserials">
+			{% for lot in detail['lotserial'] %}
+			{% include 'util/screen-formatter/tr-labels.twig' with {'section': 'lotserial', 'trclass': ''} %}
+				{% include 'util/screen-formatter/tr-section-rows.twig' with {'section': 'lotserial', 'record': lot, 'trclass': ''} %}
+			{% endfor %}
+		</tbody>
 	{% endif %}
 
 	{% for ordernote in detail['detailnotes'] %}

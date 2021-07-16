@@ -22,7 +22,7 @@
 						<strong>Weight:</strong> {{ lotserial.qty|number_format(config.decimal_places()) }}
 					</div>
 					<div class="col">
-						<strong>Production Date:</strong> {{ lotserial.expirationdate }}
+						<strong>Production Date:</strong> {{ lotserial.expirationdate|convertdate }}
 					</div>
 					<div class="col">
 						{% if (not warehouse.validate_bin(lotserial.bin)) %}

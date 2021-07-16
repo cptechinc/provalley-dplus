@@ -89,6 +89,13 @@ class Itm extends WireData implements Module {
 		return $q->findOne();
 	}
 
+	public function description($itemID) {
+		$q = $this->get_query();
+		$q->filterByItemid($itemID);
+		$q->select(ItemMasterItem::aliasproperty('description'));
+		return $q->findOne();
+	}
+
 	/**
 	 * Returns ItemMasterItem after retreiving or creating it
 	 * @param  string $itemID Item ID
@@ -706,7 +713,7 @@ class Itm extends WireData implements Module {
 		$this->recordlocker->set_function(self::RECORDLOCKER_FUNCTION);
 
 		$templates = implode('|', self::TEMPLATES_ITM);
-		
+
 		$this->addHook("Page(pw_template=$templates)::itmURL", function($event) {
 			$itemID = $event->arguments(0);
 			$event->return = $this->get_itmURL($itemID);

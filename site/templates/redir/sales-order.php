@@ -75,6 +75,13 @@
 	*		UNLOCK
 	*		ORDERNO=$ordn
 	*		break;
+	*	case 'print-invoice':
+	* 		Print Invoice
+	* 		Response: Print Invoice
+	*		DBNAME=$dplusdb
+	*		PRINTARINVOICE
+	*		ORDN=$ordn
+	*		break;
 	* }
 	**/
 
@@ -160,6 +167,11 @@
 		case 'unlock-order':
 			$ordn = $input->$requestmethod->text('ordn');
 			$data = array("DBNAME=$dplusdb", 'UNLOCK', "ORDERNO=$ordn");
+			$session->loc = $pages->get('pw_template=sales-order-view')->url."?ordn=$ordn";
+			break;
+		case 'print-invoice':
+			$ordn = $input->$requestmethod->text('ordn');
+			$data = array("DBNAME=$dplusdb", 'PRINTARINVOICE', "ORDN=$ordn");
 			$session->loc = $pages->get('pw_template=sales-order-view')->url."?ordn=$ordn";
 			break;
 	}

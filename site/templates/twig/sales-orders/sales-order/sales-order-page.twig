@@ -1,5 +1,5 @@
 {# loader is an instance of Twig_Loader_Filesystem via $config->twigloader #}
-{% include 'sales-orders/sales-order/links-header.twig' with {'list': 'orders'} %}
+{% include 'sales-orders/sales-order/links-header.twig' with {'list': 'order'} %}
 
 {% include 'sales-orders/sales-order/sales-order-header.twig' %}
 
@@ -12,7 +12,16 @@
 {% endif %}
 
 {% if user.can_editorder(order.ordernumber) %}
-	<a href="{{ page.edit_orderURL(order.ordernumber) }}" class="btn btn-warning btn-block mb-5">
-		Edit Order&ensp;<i class="fa fa-pencil" aria-hidden="true"></i>
-	</a>
+	<div class="row">
+		<div class="col-6">
+			<a href="{{ page.edit_orderURL(order.ordernumber) }}" class="btn btn-warning btn-block mb-5">
+				<i class="fa fa-pencil" aria-hidden="true"></i> Edit Order
+			</a>
+		</div>
+		<div class="col-6">
+			<a href="{{ page.delete_orderURL(order.ordernumber) }}" class="btn btn-danger btn-block delete_button mb-5">
+				<i class="fa fa-trash" aria-hidden="true"></i> Delete Order
+			</a>
+		</div>
+	</div>
 {% endif %}

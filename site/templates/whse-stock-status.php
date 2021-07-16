@@ -4,9 +4,7 @@
 	$m_json = $modules->get('JsonDataFiles');
 	$xls = $modules->get('XlsStockStatus');
 
-	if (!$m_json->file_exists(session_id(), $page->pw_template) || $values->refresh) {
-		$xls->request_json();
-	}
+	$xls->request_json();
 
 	$json = $m_json->get_file(session_id(), $page->pw_template);
 
@@ -16,7 +14,6 @@
 		if ($json['error']) {
 			$page->body .= $config->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => $json['errormsg']]);
 		} else {
-
 			$xls->write($json);
 			$page->body .= $config->twig->render('util/jdf/table.twig', ['page' => $page, 'json' => $json, 'jsondatafiles' => $m_json]);
 		}

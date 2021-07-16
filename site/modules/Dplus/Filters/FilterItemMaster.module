@@ -1,6 +1,7 @@
 <?php namespace ProcessWire;
 
 use ItemMasterItemQuery, ItemMasterItem;
+use WarehouseInventoryQuery, WarehouseInventory;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 
@@ -20,13 +21,16 @@ class FilterItemMaster extends WireData implements Module {
 	 * @param  User   $user User to Check if they are a Sales Person
 	 * @return void
 	 */
-	public function init_query(User $user) {
+	public function init_query() {
 		$this->query = ItemMasterItemQuery::create();
 	}
 
 /* =============================================================
 	Input Filter Functions
 ============================================================= */
+	public function filter_input($input) {
+
+	}
 
 
 
@@ -58,6 +62,34 @@ class FilterItemMaster extends WireData implements Module {
 			ItemMasterItem::get_aliasproperty('description2')
 		];
 		$this->query->search_filter($columns, strtoupper($q));
+	}
+
+	public function active() {
+		$q = WarehouseInventoryQuery::create();
+		$q->select(WarehouseInventory::aliasproperty('itemid'));
+		$q->filterByStatus(WarehouseInventory::STATUS_ACTIVE);
+		$itemID = $q->find()->toArray();
+		$this->itemid($itemID);
+		return $this;
+	}
+
+	public function iiDisplay(bool $display) {
+		$q = WarehouseInventoryQuery::create();
+		$q->select(WarehouseInventory::aliasproperty('itemid'));
+		$q->filterByDisplayiilist($display);
+		$itemID = $q->find()->toArray();
+		$this->itemid($itemID);
+		return $this;
+	}
+
+	public function ii() {
+		$q = WarehouseInventoryQuery::create();
+		$q->select(WarehouseInventory::aliasproperty('itemid'));
+		$q->filterByStatus(WarehouseInventory::STATUS_ACTIVE);
+		$q->filterByDisplayiilist(true);
+		$itemID = $q->find()->toArray();
+		$this->itemid($itemID);
+		return $this;
 	}
 
 /* =============================================================
