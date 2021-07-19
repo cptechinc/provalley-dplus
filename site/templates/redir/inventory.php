@@ -445,6 +445,11 @@
 			//$url->query->set('ponbr', $ponbr);
 			$session->loc = $url->getUrl();
 			break;
+		case 'print-invoice':
+			$ordn = $input->$rn->text('ordn');
+			$data = array("DBNAME=$dplusdb", 'PRINTARINVOICE', "ORDN=$ordn");
+			$session->loc = $pages->get('pw_template=sales-order-view')->url."?ordn=$ordn";
+			break;
 	}
 
 	if (!empty($data)) {
