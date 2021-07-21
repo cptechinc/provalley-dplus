@@ -8,6 +8,7 @@
 	$routes = [
 		['GET',  '', Provalley\Inventory::class, 'index'],
 		['GET',  'print-gs1', Provalley\PrintGs1::class, 'index'],
+		['POST',  'print-gs1', Provalley\PrintGs1::class, 'handleCRUD'],
 	];
 
 	$router = new Mvc\Router();
