@@ -68,6 +68,7 @@ class PrintGs1 extends Base {
 
 	static private function scanResult($data) {
 		$json = self::getJsonModule()->getFile(self::JSONCODE);
+
 		if ($json['error']) {
 			$html = '';
 			$html .= self::pw('config')->twig->render('util/bootstrap/alert.twig', ['type' => 'danger', 'headerclass' => 'text-white', 'title' => 'Error!', 'iconclass' => 'fa fa-warning fa-2x', 'message' => $json['message']]);
@@ -179,10 +180,6 @@ class PrintGs1 extends Base {
 		self::sanitizeParametersShort($data, ['scan|text', 'itemID|text', 'vendorID|text']);
 		self::initHooks();
 
-		$config  = self::pw('config');
-
-		$html  = '';
-
 		if (array_key_exists('lots', $json)) {
 			return self::lotForm($data, $json);
 		}
@@ -190,7 +187,7 @@ class PrintGs1 extends Base {
 		if (array_key_exists('items', $json)) {
 			return self::scanResultItemsDisplay($data, $json);
 		}
-		return $html;
+		return '';
 	}
 
 	static private function scanResultItemsDisplay($data, array $json) {
@@ -228,7 +225,6 @@ class PrintGs1 extends Base {
 
 	static private function requestPrintLabels($data) {
 		$date = date('Ymd', strtotime($data->date));
-		
 		$vars = [
 			'PRINTGS1LABEL',
 			"VENDOR=$data->vendorID",
