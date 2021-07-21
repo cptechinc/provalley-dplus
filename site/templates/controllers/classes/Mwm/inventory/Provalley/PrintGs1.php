@@ -33,15 +33,7 @@ class PrintGs1 extends Base {
 		if (empty($data->scan) === false) {
 			return self::scan($data);
 		}
-		$html = '';
-
-		if (self::pw('session')->getFor('print-gs1', 'printed-labels')) {
-			$lot = self::pw('session')->getFor('print-gs1', 'printed-labels');
-			$html .= self::pw('config')->twig->render('util/bootstrap/alert.twig', ['type' => 'success', 'headerclass' => 'text-white', 'title' => 'Printed Labels', 'iconclass' => 'fa fa-print fa-2x', 'message' => 'Printing Lot Ref ' . $lot->lotref]);
-			$html .= '<div class="mb-3"></div>';
-		}
-		$html .= self::scanForm($data);
-		return $html;
+		return self::initScreen($data);
 	}
 
 	static public function handleCRUD($data) {
@@ -158,6 +150,27 @@ class PrintGs1 extends Base {
 /* =============================================================
 	Displays
 ============================================================= */
+	static private function initScreen($data) {
+		$html = '';
+
+		if (self::pw('session')->getFor('print-gs1', 'printed-labels')) {
+			$whsesession = self::getWhseSession();
+			if ($whsesession->hasError()) {
+				$html .= self::pw('config')->twig->render('util/bootstrap/alert.twig', ['type' => 'danger', 'headerclass' => 'text-white', 'title' => 'Print Labels Error', 'iconclass' => 'fa fa-print fa-2x', 'message' => $whsesession->status]);
+			}
+
+			if ($whsesession->hasError() === false) {
+				$lot = self::pw('session')->getFor('print-gs1', 'printed-labels');
+				$msg = "Printing Label for $lot->itemID $lot->lotref";
+				$html .= self::pw('config')->twig->render('util/bootstrap/alert.twig', ['type' => 'success', 'headerclass' => 'text-white', 'title' => 'Printed Labels', 'iconclass' => 'fa fa-print fa-2x', 'message' => $msg]);
+			}
+			$html .= '<div class="mb-3"></div>';
+			self::pw('session')->removeFor('print-gs1', 'printed-labels');
+		}
+		$html .= self::scanForm($data);
+		return $html;
+	}
+
 	static private function scanForm($data) {
 		return self::pw('config')->twig->render('mii/loti/forms/scan.twig');
 	}
