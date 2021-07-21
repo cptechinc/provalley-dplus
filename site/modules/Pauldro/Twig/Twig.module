@@ -206,7 +206,7 @@ class Twig extends WireData implements Module {
 	}
 
 	private function setupTwigFunctionsTwigObj(Environment $twig) {
-		$function = new TwigFunction('twiginput', function (array $array) {
+		$function = new TwigFunction('twiginput', function ($array) {
 			$input = new \Twig\Html\TwigInput();
 			$input->setFromArray($array);
 			return $input;
