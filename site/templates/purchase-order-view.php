@@ -1,4 +1,7 @@
 <?php
+	include_once($modules->get('Mvc')->controllersPath().'vendor/autoload.php');
+	use Controllers\Mpo\PurchaseOrder\Base;
+
 	$rm = strtolower($input->requestMethod());
 	$values = $input->$rm;
 	$config->so = ConfigSalesOrderQuery::create()->findOne();
@@ -6,6 +9,12 @@
 	$modules->get('DpagesMpo')->init_purchaseorder_hooks();
 	$docm = $modules->get('DocumentManagementPo');
 	$qnotes = $modules->get('QnotesPo');
+
+
+
+	$page->addHook('Page::receivedUrl', function($event) { // inside a class
+		$event->return = Base::receivedUrl($event->arguments(0));
+	});
 
 	if ($values->action) {
 		$ponbr = PurchaseOrder::get_paddedponumber($values->text('ponbr'));
