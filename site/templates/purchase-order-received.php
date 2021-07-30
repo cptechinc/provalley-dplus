@@ -1,6 +1,7 @@
 <?php
 	include_once($modules->get('Mvc')->controllersPath().'vendor/autoload.php');
 	use Controllers\Mpo\PurchaseOrder\Received;
+	Received::initHooks();
 
 	$routes = [
 		['GET',  '', Received::class, 'index'],
@@ -14,7 +15,7 @@
 	if ($config->ajax) {
 		echo $page->body;
 	} else {
-		if ($input->lastSegment() == 'print') {
+		if ($input->lastSegment() == 'print' || $input->get->offsetExists('print')) {
 			$page->show_title = true;
 
 			if ($input->get->offsetExists('pdf')) {

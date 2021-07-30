@@ -158,7 +158,11 @@ class Received extends Base {
 		$m = self::pw('modules')->get('DpagesMpo');
 
 		$m->addHook('Page(pw_template=purchase-order-received)::poUrl', function($event) {
-			$event->return = self::scanChooseItemUrl($event->arguments(0));
+			$event->return = self::poUrl($event->arguments(0));
+		});
+
+		$m->addHook('Page(pw_template=purchase-order-received)::receivedUrl', function($event) {
+			$event->return = self::receivedUrl($event->arguments(0));
 		});
 	}
 
