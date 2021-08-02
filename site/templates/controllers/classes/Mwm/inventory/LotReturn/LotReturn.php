@@ -94,7 +94,7 @@ class LotReturn extends Base {
 	}
 
 	static private function returnLot($data) {
-		self::sanitizeParametersShort($data, ['lotnbr|text', 'ordn|text', 'ponbr|text', 'whseID|text', 'binID|text', 'restock|bool']);
+		self::sanitizeParametersShort($data, ['itemID|text', 'qty|float', 'lotnbr|text', 'lotref|text', 'ordn|text', 'ponbr|text', 'whseID|text', 'binID|text', 'restock|bool']);
 		if (empty($data->lotnbr)) {
 			return false;
 		}
@@ -104,7 +104,9 @@ class LotReturn extends Base {
 			if ($filter->exists($data->whseID, $data->binID) === false) {
 				return false;
 			}
+			self::pw('session')->set('lotreturn-binid', $data->binID);
 		}
+
 		self::requestLotReturn($data);
 		return true;
 	}
@@ -180,10 +182,12 @@ class LotReturn extends Base {
 
 	static private function requestLotReturn($data) {
 		$restock = $data->restock ? 'Y' : 'N';
-		$vars = ['LOTRETACTION', "RESTOCK=$restock"];
-		$vars[] = "SALESORDER=$data->ordn";
-		$vars[] = "PURCHORDER=$data->ordn";
-
+		$vars = [
+			'LOTRETACTION',
+			"ITEMID=$data->itemID", "LOTNBR=$data->lotnbr", "LOTREF=$data->lotref", "QTY=$data->qty",
+			"RESTOCK=$restock",
+			"SALESORDER=$data->ordn", "PURCHORDER=$data->ponbr"
+		];
 		if ($data->restock === true) {
 			$vars[] = "BINID=$data->binID";
 		}

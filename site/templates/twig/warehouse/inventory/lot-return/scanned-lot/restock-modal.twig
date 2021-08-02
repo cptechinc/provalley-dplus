@@ -7,7 +7,10 @@
 {% block modal_body %}
 	<form action="{{ input.url() }}" id="restock-form">
 		<input type="hidden" name="action" value="return-lot">
+		<input type="hidden" name="itemID" value="{{ json['item']['itemid'] }}">
 		<input type="hidden" name="lotnbr" value="{{ json['item']['lotnbr'] }}">
+		<input type="hidden" name="lotref" value="{{ json['item']['lotref'] }}">
+		<input type="hidden" name="qty" value="{{ json['item']['qty'] }}">
 		<input type="hidden" name="ordn" value="{{ json['item']['salesorder']['ordernumber'] }}">
 		<input type="hidden" name="ponbr" value="{{ json['item']['purchaseorder']['ponbr'] }}">
 		<input type="hidden" name="whseID" value="{{ user.whseid }}">
@@ -20,7 +23,7 @@
 					'attributes': {},
 					'input': {
 						'name': 'binID',
-						'value': '',
+						'value': session.get('lotreturn-binid'),
 						'attributes': {
 							'placeholder': '',
 							'aria-label':  'Bin ID',
