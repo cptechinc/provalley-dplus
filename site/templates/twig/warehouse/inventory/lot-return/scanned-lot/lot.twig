@@ -9,6 +9,10 @@
 			<td>{{ json['item']['lotref'] }}</td>
 		</tr>
 		<tr>
+			<td>Production Date</td>
+			<td>{{ json['item']['proddate']|convertdate }}</td>
+		</tr>
+		<tr>
 			<td>Item</td>
 			<td>{{ json['item']['itemid'] }} - {{ json['item']['description'] }}</td>
 		</tr>
