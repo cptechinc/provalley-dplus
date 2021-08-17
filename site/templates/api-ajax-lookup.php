@@ -35,7 +35,7 @@
 		case 'items':
 			if ($input->get->offsetExists('ordering')) {
 				$filter->active();
-				$filter->inStock();
+				// $filter->inStock();
 			}
 			break;
 	}
@@ -50,8 +50,6 @@
 	$twigloader = $config->twig->getLoader();
 	$results = $query->paginate($input->pageNum, 10);
 	$count   = $results->getNbResults();
-
-
 
 
 	switch ($page->ajaxcode) {

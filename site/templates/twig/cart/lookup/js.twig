@@ -75,6 +75,7 @@ $(function() {
 
 	function validate_get_item() {
 		validate_itemid_entry(input_itemid.val(), '{{ cart.get_custid() }}', '{{ cart.get_shiptoid() }}', function(response) {
+			console.log(response);
 			if (response.exists) {
 				var original = input_itemid.val();
 				input_itemid.val(response.itemID);
@@ -88,6 +89,16 @@ $(function() {
 						$('small.weight-desc').addClass('show');
 					}
 				});
+			} else if (response.count) {
+				var url = input_itemid.closest('.input-group').find('button').data('lookupurl');
+				var url = URI(url);
+				url.addQuery('q', input_itemid.val());
+				modal_ajax.attr('data-input', '#' + input_itemid.attr('id'));
+				modal_ajax.find('.modal-title').text('Searching for ' + input_itemid.val());
+				modal_ajax.resizeModal('xl');
+
+				modal_ajax.modal('show');
+				modal_ajax.find('.modal-body').loadin(url.toString(), function() {});
 			} else {
 				swal_notfound();
 			}
@@ -128,7 +139,7 @@ $(function() {
 			callback(exists);
 		});
 	}
-	
+
 	/**
 	 * Return Item Entry Object Validation
 	 * @param  string     itemID    Item ID

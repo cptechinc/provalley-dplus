@@ -45,8 +45,9 @@ $(function() {
 		 *  'itemID' => $item->itemid
 		 * }
 		 */
+		console.log(ii_url.toString());
 		$.getJSON(ii_url.toString(), function( response ) {
-
+			console.log(response);
 			if (response.exists) {
 				form_additem.attr('data-validated', response.itemID);
 				input_itemid.addClass('is-valid');
@@ -54,24 +55,30 @@ $(function() {
 				if (response.itemID != input_itemid.val()) {
 					input_itemid.val(response.itemID);
 				}
-
 				var itm_url = URI("{{ page.get_itm_lookupURL() }}");
 				itm_url.addQuery('itemID', input_itemid.val());
 				$.getJSON(itm_url.toString(), function( item ) {
-					console.log(item);
-					console.log(itm_url.toString());
 					if (item.exists) {
 						$('small.desc1').text(item.item.description);
 						$('small.desc2').text(item.item.description2);
 					}
 				});
-
 				if (input_qty.val() == '') {
 					input_qty.focus();
 				} else {
 					form_additem.submit();
 				}
+			} else if (response.count) {
+				var url = input_itemid.closest('.input-group').find('button').data('lookupurl');
+				var url = URI(url);
+				url.addQuery('q', input_itemid.val());
+
+				modal_ajax.find('.modal-title').text('Searching for ' + input_itemid.val());
+				modal_ajax.resizeModal('xl');
+				modal_ajax.find('.modal-body').loadin(url.toString(), function() {});
+				modal_ajax.modal('show');
 			} else {
+				input_itemid.addClass('is-invalid');
 				swal ({
 					title: 'Item not found.',
 					text: input_itemid.val() + ' cannot be found.',

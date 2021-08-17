@@ -53,6 +53,13 @@ class LookupItemEntry extends LookupItem implements Module {
 		}
 
 		if ($this->exists) {
+			if ($this->source == 'mxrfe' && $this->count > 1) {
+				$this->exists = false;
+				$this->lookup_prefixed($itemID);
+			}
+		}
+
+		if ($this->exists) {
 			$this->validate_active($custID, $shiptoID);
 		}
 		return $this->data;
