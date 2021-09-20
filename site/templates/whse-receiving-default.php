@@ -104,13 +104,13 @@
 								$session->redirect($page->url."?scan=$scan");
 							} else {
 								$page->title = "No results found for ''$q'";
-								$page->formurl = $page->url;
+								$page->formurl = $pages->get('template=redir, redir_file=inventory')->url;
 								$page->body .= $html->div('class=mb-3');
 								$page->body .= $config->twig->render('warehouse/inventory/receiving/po-item-form.twig', ['page' => $page, 'ponbr' => $ponbr]);
 							}
 						} else {
 							$page->title = "No results found for '$scan'";
-							$page->formurl = $page->url;
+							$page->formurl = $pages->get('template=redir, redir_file=inventory')->url;
 							$page->body .= $html->div('class=mb-3');
 							$page->body .= $config->twig->render('warehouse/inventory/receiving/po-item-form.twig', ['page' => $page, 'ponbr' => $ponbr]);
 						}

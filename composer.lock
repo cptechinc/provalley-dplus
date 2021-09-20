@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/cptechinc/dplus-model.git",
-                "reference": "6ff4cd9d66d2203b561e7b2c54b96a0bc9b2c6c0"
+                "reference": "c53a5edc864134e790bda2dad7a4c133db1f5ee0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cptechinc/dplus-model/zipball/6ff4cd9d66d2203b561e7b2c54b96a0bc9b2c6c0",
-                "reference": "6ff4cd9d66d2203b561e7b2c54b96a0bc9b2c6c0",
+                "url": "https://api.github.com/repos/cptechinc/dplus-model/zipball/c53a5edc864134e790bda2dad7a4c133db1f5ee0",
+                "reference": "c53a5edc864134e790bda2dad7a4c133db1f5ee0",
                 "shasum": ""
             },
             "require": {
@@ -43,7 +43,7 @@
                 "issues": "https://github.com/cptechinc/dplus-model/issues",
                 "source": "https://github.com/cptechinc/dplus-model/tree/master"
             },
-            "time": "2021-07-07T19:54:22+00:00"
+            "time": "2021-08-27T20:35:45+00:00"
         },
         {
             "name": "cptechinc/dpluso-model",
@@ -51,12 +51,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/cptechinc/dpluso-model.git",
-                "reference": "5f7fe969d96781a1578ff920ee3a5e1a89c295a0"
+                "reference": "57d46ae02f93d90759c660abbaf484bf5b6fcd37"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cptechinc/dpluso-model/zipball/5f7fe969d96781a1578ff920ee3a5e1a89c295a0",
-                "reference": "5f7fe969d96781a1578ff920ee3a5e1a89c295a0",
+                "url": "https://api.github.com/repos/cptechinc/dpluso-model/zipball/57d46ae02f93d90759c660abbaf484bf5b6fcd37",
+                "reference": "57d46ae02f93d90759c660abbaf484bf5b6fcd37",
                 "shasum": ""
             },
             "default-branch": true,
@@ -83,7 +83,7 @@
                 "issues": "https://github.com/cptechinc/dpluso-model/issues",
                 "source": "https://github.com/cptechinc/dpluso-model/tree/master"
             },
-            "time": "2021-07-02T18:19:19+00:00"
+            "time": "2021-09-03T14:50:24+00:00"
         },
         {
             "name": "ezyang/htmlpurifier",

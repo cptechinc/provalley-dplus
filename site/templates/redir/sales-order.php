@@ -131,7 +131,7 @@
 			$qty    = $input->$requestmethod->int('qty');
 			$custID = SalesOrderQuery::create()->get_custid($ordn);
 			$data = array("DBNAME=$dplusdb", 'SALEDET', "ORDERNO=$ordn", "ITEMID=$itemID", "QTY=$qty", "CUSTID=$custID");
-			$session->loc = $pages->get('pw_template=sales-order-edit')->url."?ordn=$ordn";
+			$session->loc = $pages->get('pw_template=sales-order-edit')->url."?ordn=$ordn#add-item-form";
 			break;
 		case 'add-popular-items':
 			$ordn = $input->$requestmethod->text('ordn');

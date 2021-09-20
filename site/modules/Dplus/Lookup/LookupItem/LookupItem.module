@@ -126,6 +126,7 @@ class LookupItem extends WireData implements Module {
 		$q->filterByMnfritemid($itemID);
 
 		$this->count = $q->count();
+		$this->message = $this->wire('modules')->get('DplusDatabase')->getDebugConnection()->getLastExecutedQuery();
 
 		if ($q->count()) {
 			$this->lookup_itm($q->findOne());
