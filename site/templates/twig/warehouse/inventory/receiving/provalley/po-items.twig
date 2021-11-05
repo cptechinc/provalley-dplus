@@ -1,3 +1,4 @@
+{% set totals = {'ordered': 0, 'received': 0, 'remaining': 0, 'weight': 0 }%}
 <div class="list-group mb-3">
 	<div class="list-group-item bg-dark text-white">
 		<div class="row">
@@ -10,6 +11,13 @@
 		</div>
 	</div>
 	{% for item in items %}
+		{% set totals = {
+				'ordered': totals.ordered + item.qty_ordered|number_format(m_receiving.decimal_places()),
+				'received': totals.received + item.count_receivedlots()|number_format(m_receiving.decimal_places()),
+				'remaining': totals.remaining + (item.qty_ordered|number_format(m_receiving.decimal_places()) - item.count_receivedlots()|number_format(m_receiving.decimal_places())),
+				'weight':  totals.weight
+			}
+		%}
 		<div class="list-group-item first-txn-row {{ item.count_receivedlots() > item.qty_ordered ? 'bg-warning text-white' : ''}}">
 			<div class="row">
 				<div class="col">
@@ -44,6 +52,13 @@
 					</div>
 				</div>
 				{% for lot in item.get_receivedlots() %}
+					{% set totals = {
+							'ordered': totals.ordered,
+							'received': totals.received,
+							'remaining': totals.remaining,
+							'weight':  totals.weight + lot.qty_received|number_format(m_receiving.decimal_places())
+						}
+					%}
 					<div class="list-group-item">
 						<div class="row">
 							<div class="col">{{ lot.lotserial }}</div>
@@ -62,4 +77,14 @@
 			</div>
 		</div>
 	{% endfor %}
+	<div class="list-group-item first-txn-row bg-light">
+		<div class="row">
+			<div class="col"></div>
+			<div class="col-4"><b>Totals:</b></div>
+			<div class="col text-right">{{ totals.weight|number_format(m_receiving.decimal_places()) }}</div>
+			<div class="col text-right">{{ totals.ordered|number_format(m_receiving.decimal_places()) }}</div>
+			<div class="col text-right">{{ totals.received|number_format(m_receiving.decimal_places()) }}</div>
+			<div class="col text-right">{{ totals.remaining }}</div>
+		</div>
+	</div>
 </div>
