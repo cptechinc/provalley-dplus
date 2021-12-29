@@ -1,4 +1,4 @@
-{% set totals = {'ordered': 0, 'received': 0, 'remaining': 0, 'weight': 0 }%}
+{% set totals = {'ordered': 0, 'received': 0, 'remaining': 0, 'weight': 0 } %}
 <div class="list-group mb-3">
 	<div class="list-group-item bg-dark text-white">
 		<div class="row">
@@ -81,7 +81,7 @@
 		<div class="row">
 			<div class="col"></div>
 			<div class="col-4"><b>Totals:</b></div>
-			<div class="col text-right">{{ totals.weight|number_format(m_receiving.decimal_places()) }}</div>
+			<div class="col text-right">Weight: {{ totals.weight|number_format(m_receiving.decimal_places()) }}</div>
 			<div class="col text-right">{{ totals.ordered|number_format(m_receiving.decimal_places()) }}</div>
 			<div class="col text-right">{{ totals.received|number_format(m_receiving.decimal_places()) }}</div>
 			<div class="col text-right">{{ totals.remaining }}</div>

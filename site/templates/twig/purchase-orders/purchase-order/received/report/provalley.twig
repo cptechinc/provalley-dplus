@@ -1,3 +1,4 @@
+{% set totals = {'ordered': 0, 'received': 0, 'weight': 0 } %}
 <table class="table table-sm">
 	<tr>
 		<th>Line #</th>
@@ -9,6 +10,12 @@
 	</tr>
 	<tbody>
 		{% for line in json['lines'] %}
+			{% set totals = {
+					'ordered': totals.ordered + line['orderqty'],
+					'received': totals.received + line['currqty'],
+					'weight': totals.weight + line['currlbs']
+				}
+			%}
 			<tr>
 				<td>
 					<button class="btn btn-primary btn-sm" type="button" data-toggle="collapse" data-target=".lot-{{ line['linenbr'] }}-{{ line['receiptdate']|convertdate('Ymd') }}" aria-expanded="false" aria-controls="lot-{{ line['linenbr'] }}-{{ line['receiptdate']|convertdate('Ymd') }}">
@@ -42,5 +49,15 @@
 				</tr>
 			{% endfor %}
 		{% endfor %}
+		<tr class="bg-light">
+			<td></td>
+			<td>
+				<b>Totals:</b>
+			</td>
+			<td></td>
+			<td>{{ totals.ordered }}</td>
+			<td>{{ totals.received }}</td>
+			<td>{{ totals.weight }}</td>
+		</tr>
 	</tbody>
 </table>
