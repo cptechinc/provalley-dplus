@@ -126,6 +126,9 @@ class Picking extends WireData implements Module {
 		$lotserial = $values->text('lotserial');
 		$binID     = $values->text('binID');
 		$orderitem = $this->items->get_picksalesorderdetail_itemid($itemID);
+		if (empty($orderitem)) {
+			return false;
+		}
 		$exists_onorder = $this->does_whseitempick_exist($orderitem, $lotserial, $binID);
 
 		if ($exists_onorder) {
