@@ -4,7 +4,9 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+
 
 /**
  * XlsSpreadsheet
@@ -65,12 +67,13 @@ class XlsSpreadsheet extends WireData implements Module {
 		$columns = array_values($data['columns']);
 		$columnindexes = array_keys($data['columns']);
 		$row = $sheet->getHighestRow() + 1;
+		$sanitizer = $this->wire('sanitizer');
 
 		foreach ($data['data'] as $record) {
 			for ($i = 0; $i < ($columncount); $i++) {
 				$cell = $sheet->getCellByColumnAndRow($i + 1, $row);
 				$cell->getStyle()->getAlignment()->setHorizontal($this->get_alignment($columns[$i]['datajustify']));
-				$cell->setValue($record[$columnindexes[$i]]);
+				$cell->setValueExplicit($sanitizer->text($record[$columnindexes[$i]]), DataType::TYPE_STRING);
 			}
 			$row++;
 		}
