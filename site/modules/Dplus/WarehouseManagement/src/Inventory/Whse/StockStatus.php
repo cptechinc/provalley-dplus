@@ -1,9 +1,12 @@
 <?php namespace Dplus\Wm\Inventory\Whse;
 // Dplus Model
 use WhseLotserial as Model;
+use ItemMasterItemQuery, ItemMasterItem;
+use InvLotQuery, InvLot;
 // ProcessWire
 use ProcessWire\WireData;
-
+// Dplus Configs
+use Dplus\Configs;
 use Dplus\Wm\Inventory\Whse\Lots\Lookup\ExcludePackBin as InvLots;
 
 /**
@@ -51,8 +54,9 @@ class StockStatus extends WireData {
 		$lots = $this->getBinItemidLots($item['binid'], $item['itemid']);
 
 		$data = [
-			'binid'  => $item['binid'],
-			'itemid' => $item['itemid'],
+			'binid'    => $item['binid'],
+			'itemid'   => $item['itemid'],
+			'itemDesc' => $this->getItemDescription($item['itemid']),
 			'totals' => [
 				'qty'      => $item['qty'],
 				'lotcount' => sizeof($lots),
@@ -63,20 +67,47 @@ class StockStatus extends WireData {
 	}
 
 	/**
+	 * Return Item Description
+	 * @param  string $itemID Item ID
+	 * @return string
+	 */
+	protected function getItemDescription($itemID) {
+		$q = ItemMasterItemQuery::create();
+		$q->select(ItemMasterItem::aliasproperty('description'));
+		return $q->findOneByItemid($itemID);
+	}
+
+	/**
+	 * Return Lot Reference #
+	 * @param  string $lotnbr Lot Number
+	 * @return string
+	 */
+	protected function getLotRef($lotnbr) {
+		$q = InvLotQuery::create();
+		$q->select(InvLot::aliasproperty('lotref'));
+		return $q->findOneByLotnbr($lotnbr);
+	}
+
+	/**
 	 * Return Lots for Item and Bin
 	 * @param  string $binID   Bin ID
 	 * @param  string $itemID  Item ID
 	 * @return array
 	 */
 	protected function getBinItemidLots($binID, $itemID) {
+		$configSo = Configs\So::config();
+		$decimalPlacesQty = $configSo->decimal_places_qty;
+		$colQty = Model::aliasproperty('qty');
+
 		$q = $this->inventory->queryWhse();
 		$q->filterByBinid($binID)->filterByItemid($itemID);
 		$q->withColumn(Model::aliasproperty('binid'), 'binid');
 		$q->withColumn(Model::aliasproperty('itemid'), 'itemid');
 		$q->withColumn(Model::aliasproperty('lotserial'), 'lotserial');
 		$q->withColumn(Model::aliasproperty('lotserial'), 'lotserial');
-		$q->withColumn(Model::aliasproperty('qty'), 'qty');
+		$q->withColumn("ROUND($colQty, $decimalPlacesQty)", 'qty');
 		$q->withColumn(Model::aliasproperty('expiredate'), 'expiredate');
+		$q->withColumn("DATEDIFF(curdate(), STR_TO_DATE(inltexpiredate, '%Y%m%d'))", 'days');
 		$q->select(['binid', 'itemid', 'qty']);
 		return $q->find()->toArray();
 	}
@@ -86,8 +117,12 @@ class StockStatus extends WireData {
 	 * @return array
 	 */
 	public function getItemsGroupedByBin() {
+		$configSo = Configs\So::config();
+		$decimalPlacesQty = $configSo->decimal_places_qty;
+		$colQty = Model::aliasproperty('qty');
+
 		$q = $this->inventory->queryWhseBins();
-		$q->withColumn('SUM(InltOnHand)', 'qty');
+		$q->withColumn("ROUND(SUM($colQty), $decimalPlacesQty)", 'qty');
 		$q->withColumn(Model::aliasproperty('binid'), 'binid');
 		$q->withColumn(Model::aliasproperty('itemid'), 'itemid');
 		$q->select(['binid', 'itemid', 'qty']);

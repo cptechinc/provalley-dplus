@@ -35,8 +35,25 @@ class Provalley extends StockStatus {
 	protected function getBinItemidAvgDays($binID, $itemID) {
 		$q = $this->inventory->queryWhse();
 		$q->filterByBinid($binID)->filterByItemid($itemID);
-		$q->withColumn("AVG(DATEDIFF(curdate(), STR_TO_DATE(inltexpiredate, '%Y%m%d')))", 'days');
+		$q->withColumn("ROUND(AVG(DATEDIFF(curdate(), STR_TO_DATE(inltexpiredate, '%Y%m%d'))))", 'days');
 		$q->select('days');
 		return $q->findOne();
+	}
+
+	/**
+	 * Return Lots for Item and Bin
+	 * @param  string $binID   Bin ID
+	 * @param  string $itemID  Item ID
+	 * @return array
+	 */
+	protected function getBinItemidLots($binID, $itemID) {
+		$lots = parent::getBinItemidLots($binID, $itemID);
+		$data = [];
+		foreach ($lots as $lot) {
+			$r = $lot;
+			$r['lotref'] = $this->getLotRef($lot['lotserial']);
+			$data[] = $r;
+		}
+		return $data;
 	}
 }
