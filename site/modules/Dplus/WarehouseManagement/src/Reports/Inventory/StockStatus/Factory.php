@@ -20,6 +20,30 @@ class Factory extends WireData {
 	}
 
 	/**
+	 * Generate Report
+	 * @return void
+	 */
+	public function generate() {
+		$this->reporter->generate();
+	}
+
+	/**
+	 * Return Reporter
+	 * @return StockStatus
+	 */
+	public function getReporter() {
+		return $this->reporter;
+	}
+
+	/**
+	 * Return Report Data
+	 * @return array
+	 */
+	public function getReportData() {
+		return $this->reporter->getReportData();
+	}
+
+	/**
 	 * Export Report as a Spreadsheet
 	 * @return bool
 	 */
@@ -28,7 +52,12 @@ class Factory extends WireData {
 		$exporter = new Spreadsheet();
 		$exporter->setColumns($this->reporter->getAllColumns());
 		$exporter->setReportData($this->reporter->getReportData());
-		return $exporter->export();
+		$success = $exporter->export();
+
+		if ($success === false) {
+			return false;
+		}
+		return $exporter->getExportFilePath();
 	}
 
 	/**
