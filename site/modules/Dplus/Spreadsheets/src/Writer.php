@@ -46,10 +46,10 @@ abstract class Writer extends WireData {
 	 * @return bool
 	 */
 	public function write(Spreadsheet $spreadsheet) {
-		$writer = $this->getWriter($spreadsheet);
-		return $writer->save($this->getFilepath());
+		$writer  = $this->getWriter($spreadsheet);
+		$success = $writer->save($this->getFilepath());
+		return true;
 	}
-
 
 	/**
 	 * Returns Spreadsheet Alignment Code
