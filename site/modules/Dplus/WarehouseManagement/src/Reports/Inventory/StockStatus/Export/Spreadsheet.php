@@ -88,6 +88,16 @@ class Spreadsheet extends WireData {
 	}
 
 	/**
+	 * Return Filepath for file
+	 * @return string
+	 */
+	public function getExportFilePath() {
+		$writer = new DplusSS\Writers\Xlsx();
+		$writer->filename = 'stock-status';
+		return $writer->getFilepath();
+	}
+
+	/**
 	 * Return Index for the next available blank row
 	 * @param  Worksheet $sheet
 	 * @return int
