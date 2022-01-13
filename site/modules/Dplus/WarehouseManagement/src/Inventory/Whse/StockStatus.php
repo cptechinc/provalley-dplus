@@ -126,7 +126,7 @@ class StockStatus extends WireData {
 		$q->withColumn(Model::aliasproperty('binid'), 'binid');
 		$q->withColumn(Model::aliasproperty('itemid'), 'itemid');
 		$q->select(['binid', 'itemid', 'qty']);
-		$q->groupBy(['binid', 'itemid']);
+		$q->groupBy(['itemid', 'binid']);
 		return $q->find();
 	}
 }
