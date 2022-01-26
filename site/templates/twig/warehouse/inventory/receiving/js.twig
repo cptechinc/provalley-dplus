@@ -94,23 +94,24 @@ $(function() {
 	form_itemsearch.validate({
 		errorClass: "is-invalid",
 		rules: {
-			scan: 'required'
+			scan: 'required',
+			binID: {
+				required: form_itemsearch.data('forcebin') == true,
+				remote: {
+					url: '{{ page.jsonApiUrl('inv/validate/warehouse/bin') }}',
+					type: "get",
+					data: {
+						whseID: "{{ user.whseid }}",
+						jqv:true,
+					}
+				}
+			}
 		},
 		messages: {
 			scan: "Please scan an itemID, Lot/Serial #, etc.",
 		},
 		submitHandler : function(form) {
 			var valid_form = new SwalError(false, '', '', false);
-
-			if (form_itemsearch.data('forcebin') == true) {
-				var valid_bin  = validate_bin(form_itemsearch);
-			} else {
-				var valid_bin = valid_form;
-			}
-
-			if (valid_bin.error) {
-				valid_form = valid_bin;
-			}
 
 			if (valid_form.error) {
 				swal({
@@ -210,6 +211,8 @@ $(function() {
 		var input_bin     = form.find('input[name=binID]');
 		var lowercase_bin = input_bin.val();
 		input_bin.val(lowercase_bin.toUpperCase());
+
+
 
 		if (input_bin.val() == '') {
 			error = true;
