@@ -12,6 +12,8 @@ $(function() {
 /* =============================================================
 	Cart items Functions
 ============================================================= */
+
+
 	$("body").on('change', 'input[name=price]', function(e) {
 		e.preventDefault();
 		var input = $(this);
@@ -39,6 +41,19 @@ $(function() {
 		var row   = input.closest('.cart-item');
 		input.val(qty.toFixed({{ cart.decimal_places_qty }}));
 		update_totalprice(row);
+	});
+
+	$("body").on('change', 'input.line-input', function(e) {
+		var input = $(this);
+
+		if (input.val() != input.data('original')) {
+			var row   = input.closest('.cart-item');
+			row.addClass('highlight');
+			row.find('.crud-msg').text('Save your changes');
+		} else {
+			row.removeClass('highlight');
+			row.find('.crud-msg').text('');
+		}
 	});
 
 	function update_totalprice(row) {

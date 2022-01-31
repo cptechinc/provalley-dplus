@@ -112,6 +112,11 @@ $(function() {
 						$('small.weight-desc').addClass('show');
 						input_qty.removeAttr('disabled');
 						input_weight.removeAttr('disabled');
+
+						if (input_qty.val() == '') {
+							input_qty.focus();
+						}
+
 					}
 				});
 			} else if (response.count) {
