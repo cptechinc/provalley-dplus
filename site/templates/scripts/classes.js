@@ -49,3 +49,58 @@ function JsContento() {
 		}
 	}
 }
+
+function AjaxRequest(url) {
+	this.url = url;
+	this.method = 'GET';
+	this.data = {};
+	this.setData = function(data) {
+		this.data = data;
+	},
+	this.setMethod = function(method) {
+		this.method = method;
+	},
+	this.request = function(callback) {
+		$.ajax({
+			url: this.url,
+			method: this.method,
+			beforeSend: function(xhr) {},
+			data: this.data,
+			success: function(json) {
+				callback(json);
+			},
+			error: function(xhr){
+			},
+		});
+	}
+}
+
+class Alerts {
+	static instance = null;
+
+	static getInstance() {
+		if (this.instance === null) {
+			this.instance = new Alerts();
+		}
+		return this.instance;
+	}
+
+	unsavedChanges(callback) {
+		swal2.fire({
+			title: 'Changes have occurred!',
+			text: 'Do you want to save?',
+			icon: 'warning',
+			showCancelButton: true,
+			confirmButtonText: '<i class="fa fa-floppy-o" aria-hidden="true"></i> Yes',
+			cancelButtonText: 'No',
+		}).then((result) => {
+			if (result.value) {
+				callback(true);
+				return true;
+			} else if (result.dismiss === Swal.DismissReason.cancel) {
+				callback(false);
+				return false;
+			}
+		});
+	}
+}
