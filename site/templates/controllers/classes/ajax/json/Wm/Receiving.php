@@ -108,6 +108,21 @@ class Receiving extends AbstractController {
 		return $data;
 	}
 
+	public static function getBin($data) {
+		$fields = ['ponbr|ponbr', 'binID|text'];
+		self::sanitizeParametersShort($data, $fields);
+		self::pw('modules')->get('WarehouseManagement');
+
+		$r = new ReceivingCRUD();
+		$r->setPonbr($data->ponbr);
+		$r->init();
+		$data = [
+			'ponbr'    => $data->ponbr,
+			'lotcount' => $r->items->countBinLotserials($data->binID)
+		];
+		return $data;
+	}
+
 	private static function validatorMin() {
 		return new MinValidator();
 	}

@@ -18,6 +18,18 @@ $(function() {
 		$('input[name=scan]').focus();
 	}
 
+	$("body").on("click", "input[name=binID]", function(e) {
+		e.preventDefault();
+		var input = $(this);
+		$('.binid').text(input.val());
+
+		var ajax = new AjaxRequest('{{ page.jsonApiUrl('wm/receiving/bins/bin/')}}');
+		ajax.setData({ponbr: $('input[name=ponbr]').val(), binID: input.val()});
+		ajax.request(function(data) {
+			$('.bin-lotcount').text(data.lotcount);
+		});
+	});
+
 	$("body").on("click", "#bins-modal .choose-bin", function(e) {
 		e.preventDefault();
 		var button = $(this);

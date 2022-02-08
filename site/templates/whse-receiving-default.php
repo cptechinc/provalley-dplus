@@ -106,20 +106,35 @@
 								$page->title = "No results found for ''$q'";
 								$page->formurl = $pages->get('template=redir, redir_file=inventory')->url;
 								$page->body .= $html->div('class=mb-3');
-								$page->body .= $config->twig->render('warehouse/inventory/receiving/po-item-form.twig', ['page' => $page, 'ponbr' => $ponbr]);
+
+								if (file_exists($config->paths->templates."twig/warehouse/inventory/receiving/$config->company/po-item-form.twig")) {
+									$page->body .= $config->twig->render("warehouse/inventory/receiving/$config->company/po-item-form.twig", ['page' => $page, 'ponbr' => $ponbr, 'm_receiving' => $warehouse_receiving]);
+								} else {
+									$page->body .= $config->twig->render('warehouse/inventory/receiving/po-item-form.twig', ['page' => $page, 'ponbr' => $ponbr]);
+								}
 							}
 						} else {
 							$page->title = "No results found for '$scan'";
 							$page->formurl = $pages->get('template=redir, redir_file=inventory')->url;
 							$page->body .= $html->div('class=mb-3');
-							$page->body .= $config->twig->render('warehouse/inventory/receiving/po-item-form.twig', ['page' => $page, 'ponbr' => $ponbr]);
+
+							if (file_exists($config->paths->templates."twig/warehouse/inventory/receiving/$config->company/po-item-form.twig")) {
+								$page->body .= $config->twig->render("warehouse/inventory/receiving/$config->company/po-item-form.twig", ['page' => $page, 'ponbr' => $ponbr, 'm_receiving' => $warehouse_receiving]);
+							} else {
+								$page->body .= $config->twig->render('warehouse/inventory/receiving/po-item-form.twig', ['page' => $page, 'ponbr' => $ponbr]);
+							}
 						}
 					}
 				} else {
 					$page->formurl = $pages->get('template=redir, redir_file=inventory')->url;
 					$page->body .= $html->div('class=mb-3');
 					$page->body .= $html->h3('', 'Scan item to add');
-					$page->body .= $config->twig->render('warehouse/inventory/receiving/po-item-form.twig', ['page' => $page, 'ponbr' => $ponbr]);
+
+					if (file_exists($config->paths->templates."twig/warehouse/inventory/receiving/$config->company/po-item-form.twig")) {
+						$page->body .= $config->twig->render("warehouse/inventory/receiving/$config->company/po-item-form.twig", ['page' => $page, 'ponbr' => $ponbr, 'm_receiving' => $warehouse_receiving]);
+					} else {
+						$page->body .= $config->twig->render('warehouse/inventory/receiving/po-item-form.twig', ['page' => $page, 'ponbr' => $ponbr]);
+					}
 				}
 
 				$page->body .= $html->h3('', 'PO Items');

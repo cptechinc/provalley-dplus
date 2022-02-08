@@ -237,6 +237,14 @@ class Receiving extends WireData implements Module {
 		$q = ItemMasterItemQuery::create();
 		return $q->is_item_normal($itemID);
 	}
+
+	public function countLotsInBin($binID) {
+		$q = PurchaseOrderDetailLotReceivingQuery::create();
+		$q->filterByPonbr($this->ponbr);
+		$q->filterByBin($binID);
+		return $q->count();
+	}
+	
 /* =============================================================
 	URL Functions
 ============================================================= */

@@ -113,6 +113,9 @@
 					['GET', '', Json\Wm\Receiving::class, 'test'],
 					['GET', 'line/', Json\Wm\Receiving::class, 'getLine'],
 					['GET', 'lotserial/', Json\Wm\Receiving::class, 'getLineLotserial'],
+				],
+				'bins' => [
+					['GET', 'bin', Json\Wm\Receiving::class, 'getBin'],
 				]
 			],
 		],

@@ -325,6 +325,20 @@ class Items extends Base {
 	}
 
 	/**
+	 * Return Received Lot from Bin
+	 * @param  string $linenbr   Line Number
+	 * @param  string $lotserial Lotserial
+	 * @param  string $binID     Bin ID
+	 * @return PurchaseOrderDetailLotReceiving
+	 */
+	public function countBinLotserials($binID) {
+		$q = PurchaseOrderDetailLotReceivingQuery::create();
+		$q->filterByPonbr($this->ponbr);
+		$q->filterByBinid($binID);
+		return $q->count();
+	}
+
+	/**
 	 * Return if Lotserial has is Received
 	 * @param  string $linenbr   Line Number
 	 * @param  string $lotserial Lotserial

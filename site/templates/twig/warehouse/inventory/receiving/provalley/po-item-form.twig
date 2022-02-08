@@ -1,0 +1,14 @@
+<div class="row">
+	<div class="col-9">
+		{% include 'warehouse/inventory/receiving/po-item-form.twig' %}
+	</div>
+	<div class="col-3">
+		<div class="card">
+			<div class="card-header">Bin: <span class="binid">{{ page.has('bin') ? page.bin : '' }}</span>
+			</div>
+			<div class="card-body">
+				Boxes in bin: <span class="bin-lotcount">{{ page.has('bin') ? m_receiving.countLotsInBin(page.bin) : '' }}</span>
+			</div>
+		</div>
+	</div>
+</div>
