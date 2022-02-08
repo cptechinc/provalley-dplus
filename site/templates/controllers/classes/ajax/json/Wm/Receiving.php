@@ -35,7 +35,7 @@ class Receiving extends AbstractController {
 		return $data->jqv ? true : false;
 	}
 
-	static public function allowItemOnOrder($data) {
+	public static function allowItemOnOrder($data) {
 		self::sanitizeParametersShort($data, ['itemID|text', 'ponbr|ponbr', 'jqv|bool']);
 		$r = new ReceivingCRUD();
 		$r->setPonbr($data->ponbr);
@@ -47,7 +47,7 @@ class Receiving extends AbstractController {
 		return $data->jqv ? "Item Not Allowed on PO" : false;
 	}
 
-	static public function doesQtyAddNeedWarning($data) {
+	public static function doesQtyAddNeedWarning($data) {
 		$fields = ['itemID|text', 'qty|float', 'ponbr|ponbr'];
 		self::sanitizeParametersShort($data, $fields);
 		$validate = self::validatorMin();
@@ -67,7 +67,7 @@ class Receiving extends AbstractController {
 		return $qtyReceived > $qtyOrdered;
 	}
 
-	static public function getLineLotserial($data) {
+	public static function getLineLotserial($data) {
 		$fields = ['ponbr|ponbr', 'linenbr|int', 'lotserial|text', 'binID|text'];
 		self::sanitizeParametersShort($data, $fields);
 		$validate = self::validatorMpo();
