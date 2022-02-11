@@ -25,13 +25,13 @@ $(function() {
 			itemID: {
 				required: true,
 				remote: {
-					url: '{{ page.jsonapiURL('inv') }}',
+					url: '{{ page.jsonapiURL('inv/validate/itemid/') }}',
 					type: "get",
 					data: {
-						action: 'validate-itemid',
 						itemID: function() {
 							return $('#additemID').val();
-						}
+						},
+						jqv: 'true'
 					}
 				}
 			},
@@ -70,13 +70,13 @@ $(function() {
 	$("body").on('change', '#add-item-form input[name=itemID]', function(e) {
 		var input = $(this);
 		validate_get_item();
-		// if (validator.element('#'+input.attr('id'))) {
-		// 	if (validator.element('#'+input_qty.attr('id'))) {
-		// 		form_additem.submit();
-		// 	} else {
-		// 		input_qty.focus();
-		// 	}
-		// }
+		if (validator.element('#'+input.attr('id'))) {
+			if (validator.element('#'+input_qty.attr('id'))) {
+				form_additem.submit();
+			} else {
+				input_qty.focus();
+			}
+		}
 	});
 
 	$("body").on('change', '#add-item-form input[name=qty]', function(e) {
@@ -116,14 +116,15 @@ $(function() {
 						input_weight.removeAttr('disabled');
 					}
 				});
-			} else if (response.count) {
+			} else if (response.matches.itm > 0) {
+				var q = input_itemid.val();
+				input_itemid.val('');
 				var url = input_itemid.closest('.input-group').find('button').data('lookupurl');
-				var url = URI(url);
-				url.addQuery('q', input_itemid.val());
-				modal_ajax.attr('data-input', '#' + input_itemid.attr('id'));
-				modal_ajax.find('.modal-title').text('Searching for ' + input_itemid.val());
+				url = URI(url);
+				url.addQuery('q', q);
+				var modal_ajax = $('#ajax-modal');
+				modal_ajax.find('.modal-title').text('Searching for ' + q);
 				modal_ajax.resizeModal('xl');
-
 				modal_ajax.modal('show');
 				modal_ajax.find('.modal-body').loadin(url.toString(), function() {});
 			} else {
@@ -159,13 +160,14 @@ $(function() {
 	 * @return {bool}
 	 */
 	function validate_itm_item(itemID, callback) {
-		var url = new URI('{{ page.jsonapiURL('inv') }}');
-		url.addQuery('action', 'validate-itemid').addQuery('itemID', itemID);
+		var url = new URI('{{ page.jsonapiURL('inv/validate/itemid/') }}');
+		url.addQuery('itemID', itemID);
 
 		$.getJSON(url.toString(), function(exists) {
 			callback(exists);
 		});
 	}
+
 	/**
 	 * Return Item Entry Object Validation
 	 * @param  string     itemID    Item ID
@@ -174,12 +176,12 @@ $(function() {
 	 * @return {object}             {exists: (bool), itemID: xxx, message: xxx, source: xxx }
 	 */
 	function validate_itemid_entry(itemID, custID, shiptoID, callback) {
-		var url = URI("{{ page.ii_lookupURL() }}");
+		var url = URI("{{ page.jsonapiURL('item-lookup') }}");
 		url.addQuery('itemID', itemID);
 		url.addQuery('custID', custID);
 		url.addQuery('shiptoID', shiptoID);
 
-		$.getJSON(url.toString(), function( response ) {
+		$.getJSON(url.toString(), function(response) {
 			return callback(response);
 		});
 	}
@@ -191,8 +193,8 @@ $(function() {
 	 * @return {object}             {itemid: xxx, description: xxx, description2: xxx, uom_purchase: xxx}
 	 */
 	function get_itm_item(itemID, callback) {
-		var url = new URI('{{ page.jsonapiURL('inv') }}');
-		url.addQuery('action', 'get-item').addQuery('itemID', itemID).addQuery('fields', 'uom_purchase,weight');
+		var url = new URI('{{ page.jsonapiURL('inv/item/') }}');
+		url.addQuery('itemID', itemID).addQuery('fields', 'uom_purchase,weight');
 
 		$.getJSON(url.toString(), function(item) {
 			callback(item);
@@ -202,35 +204,7 @@ $(function() {
 /* =============================================================
 	Lookup Modal Functions
 ============================================================= */
-	modal_ajax.on('show.bs.modal', function (event) {
-		var button = $(event.relatedTarget); // Button that triggered the modal
-		var modal = $(this);
-		var url = button.data('lookupurl');
-
-		modal.attr('data-input', button.data('input'));
-		modal.find('.modal-title').text(button.attr('title'));
-		modal.resizeModal('xl');
-		modal.find('.modal-body').loadin(url, function() {});
-	});
-
-	$("body").on('submit', '#ajax-modal form', function(e) {
-		e.preventDefault();
-		var form = $(this);
-		var query = form.serialize();
-		var action = form.attr('action');
-		var search = form.find('input[name=q]').val();
-		var url = action + '?' + query;
-		form.closest('.modal').find('.modal-title').text('Searching for ' + search);
-		form.closest('.modal').find('.modal-body').loadin(url, function() {});
-	});
-
-	$("body").on('click', '#ajax-modal .paginator-link', function(e) {
-		e.preventDefault();
-		var href = $(this).attr('href');
-		modal_ajax.find('.modal-body').load(href);
-	});
-
-	$("body").on('click', '.item-link', function(e) {
+	$("body").on('click', '#ajax-modal .item-link', function(e) {
 		e.preventDefault();
 		var button = $(this);
 		var itemID = button.data('itemid');

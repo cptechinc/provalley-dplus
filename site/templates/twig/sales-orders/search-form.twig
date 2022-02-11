@@ -9,7 +9,7 @@
 	</div>
 </div>
 
-<div id="orders-search-div" class="{{ input.get.text('filter') is empty ? 'collapse' : ''}}">
+<div id="orders-search-div" class="collapse {{ input.get.offsetExists('filter') == false ? 'show' : ''}}">
 	<div class="card mb-3">
 		<div class="card-body">
 			<form action="" method="get" class="remove-empty-fields" submit-empty="false">
@@ -84,21 +84,21 @@
 						<label>New</label>
 						<input class="pull-right" type="checkbox" name="status[]" value="N" {{ 'N' in input.get.status ? 'checked' : '' }} ></br>
 
-						<label>Invoice</label>
-						<input class="pull-right" type="checkbox" name="status[]" value="I" {{ 'I' in input.get.status  ? 'checked' : '' }} ></br>
-
 						<label>Picked</label>
 						<input class="pull-right" type="checkbox" name="status[]" value="P" {{ 'P' in input.get.status ? 'checked' : '' }} ></br>
 
 						<label>Verified</label>
 						<input class="pull-right" type="checkbox" name="status[]" value="V" {{ 'V' in input.get.status  ? 'checked' : '' }} ></br>
+
+						<label>Invoice</label>
+						<input class="pull-right" type="checkbox" name="status[]" value="I" {{ 'I' in input.get.status  ? 'checked' : '' }} ></br>
 					</div>
 				</div>
 				<br>
 				<div class="d-flex w-100 justify-content-between">
 					<div>
 						<button class="btn btn-success" type="submit">
-							<i class="fa fa-filter" aria-hidden="true"></i> Filter
+							<i class="fa fa-filter" aria-hidden="true"></i> Apply Filter
 						</button>
 					</div>
 					<div>

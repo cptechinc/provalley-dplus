@@ -1,21 +1,25 @@
 <?php namespace Dplus\DocManagement\Finders;
-
+// Purl URI manipulation library
 use Purl\Url;
+// Propel ORM Library
 use Propel\Runtime\ActiveQuery\Criteria;
+// ProcessWire
 use ProcessWire\WireData;
-
+// Dplus Models
 use DocumentFolderQuery, DocumentFolder;
 use DocumentQuery, Document;
-
-
+// Dplus Document Management
 use Dplus\DocManagement\Mover as FileMover;
+use Dplus\DocManagement\Viewer;
+use Dplus\DocManagement\Folders;
+use Dplus\DocManagement\Config;
 
 /**
  * Document Finder
- *
  * Decorator for DocumentQuery to find Documents in Database
  */
 class Finder extends WireData {
+	const FOLDER = '';
 	const TAG_ARINVOICE  = 'AR';
 	const TAG_SALESORDER = 'SO';
 	const TAG_QUOTE      = 'QT';
@@ -24,6 +28,7 @@ class Finder extends WireData {
 	const TAG_APINVOICE  = 'AP';
 	const TAG_CUSTOMER   = 'CU';
 	const TAG_WIP        = 'WP';
+	const TAG_LOT        = 'LT';
 
 	const TAG_AR_CHECKS = 'RC';
 
@@ -59,11 +64,29 @@ class Finder extends WireData {
 	}
 
 	/**
+	 * Return Folder Code
+	 * @return string
+	 */
+	public function getFolder() {
+		return static::FOLDER;
+	}
+
+	/**
 	 * Return Document Query
 	 * @return DocumentQuery
 	 */
 	public function docQuery() {
 		return DocumentQuery::create();
+	}
+
+	public function queryTagFolder($tag, $folder) {
+		$conf = Config::getInstance();
+		$folder = $conf->folder->useLowercase() ? strtolower($folder) : $folder;
+
+		$q = $this->docQuery();
+		$q->filterByTag($tag);
+		$q->filterByFolder($folder);
+		return $q;
 	}
 
 /* =============================================================
@@ -76,10 +99,29 @@ class Finder extends WireData {
 	 * @return bool
 	 */
 	public function exists($folder, $filename) {
+		$config = Config::getInstance();
+		$folder = $config->folder->useLowercase() ? strtolower($folder) : $folder;
+
 		$q = $this->docQuery();
 		$q->filterByFolder($folder);
 		$q->filterByFilename($filename);
 		return boolval($q->count());
+	}
+
+	/**
+	 * Return Document
+	 * @param  string $folder   Folder Code
+	 * @param  string $filename File Name
+	 * @return Document
+	 */
+	public function getDocumentByFilename($folder, $filename) {
+		$config = Config::getInstance();
+		$folder = $config->folder->useLowercase() ? strtolower($folder) : $folder;
+
+		$q = $this->docQuery();
+		$q->filterByFolder($folder);
+		$q->filterByFilename($filename);
+		return $q->findOne();
 	}
 
 	/**
@@ -89,10 +131,13 @@ class Finder extends WireData {
 	 * @return string
 	 */
 	public function documentFilepath($folder, $filename) {
+		$config = Config::getInstance();
+		$folder = $config->folder->useLowercase() ? strtolower($folder) : $folder;
+
 		if ($this->exists($folder, $filename) === false) {
 			return '';
 		}
-		$folder = DocumentFolderQuery::create()->findOneByFolder($folder);
+		$folder = $this->getFolders()->folder($folder);
 		return "$folder->directory/$filename";
 	}
 
@@ -119,6 +164,9 @@ class Finder extends WireData {
 	 * @return bool
 	 */
 	public function moveDocument($folder, $filename, $destination = '') {
+		$config = Config::getInstance();
+		$folder = $config->folder->useLowercase() ? strtolower(self::FOLDER) : self::FOLDER;
+
 		if (empty($destination) === false && file_exists($destination) === false) {
 			return false;
 		}
@@ -127,7 +175,7 @@ class Finder extends WireData {
 			return false;
 		}
 
-		$folder = DocumentFolderQuery::create()->findOneByFolder($folder);
+		$folder = $this->getFolders()->folder($folder);
 		$mover = self::getFileMover();
 		return $mover->copyFile($folder->directory, $filename, $destination);
 	}
@@ -136,11 +184,31 @@ class Finder extends WireData {
 /* =============================================================
 	Supplemental Functions
 ============================================================= */
+	/**
+	 * Return columns
+	 * @return WireData
+	 */
 	public function getColumnData() {
 		$columns = new WireData();
 		$columns->tag = Document::aliasproperty('tag');
 		$columns->reference1 = Document::aliasproperty('reference1');
 		$columns->reference2 = Document::aliasproperty('reference2');
 		return $columns;
+	}
+
+	/**
+	 * Return Doc Viewer
+	 * @return Viewer
+	 */
+	public function getViewer() {
+		return Viewer::getInstance();
+	}
+
+	/**
+	 * Return Folders
+	 * @return Folders
+	 */
+	public function getFolders() {
+		return Folders::getInstance();
 	}
 }

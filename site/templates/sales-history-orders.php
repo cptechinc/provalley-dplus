@@ -1,14 +1,25 @@
 <?php
-	$filter_saleshistory = $modules->get('FilterSalesHistory');
-	$filter_saleshistory->init_query($user);
-	$filter_saleshistory->filter_input($input);
-	$filter_saleshistory->apply_sortby($page);
-	$query = $filter_saleshistory->get_query();
-	$query->orderByDate_ordered('DESC');
+	include($modules->get('Mvc')->controllersPath().'vendor/autoload.php');
+	
+	use Controllers\Mso\SalesOrder\Lists\Invoices;
 
-	$orders = $query->paginate($input->pageNum, 10);
+	Invoices\Invoice::initHooks();
 
-	$page->body = $config->twig->render('sales-orders/sales-history/search-form.twig', ['page' => $page, 'input' => $input]);
-	$page->body .= $config->twig->render('sales-orders/sales-history/sales-history-list-links.twig', ['page' => $page, 'orders' => $orders, 'orderpage' => $pages->get('pw_template=sales-order-view')->url]);
-	$page->body .= $config->twig->render('util/paginator.twig', ['page' => $page, 'pagenbr' => $input->pageNum, 'resultscount'=> $orders->getNbResults()]);
-	include __DIR__ . "/basic-page.php";
+	$routes = [
+		['GET', '', Invoices\Invoice::class, 'index'],
+		['GET', 'page{pagenbr:\d+}', Invoices\Invoice::class, 'index'],
+		'customer' => [
+			['GET', '', Invoices\Customer::class, 'index'],
+			['GET', 'page{pagenbr:\d+}', Invoices\Customer::class, 'index'],
+		]
+	];
+	$router = new Mvc\Routers\Router();
+	$router->setRoutes($routes);
+	$router->setRoutePrefix($page->url);
+	$page->body = $router->route();
+
+	if ($config->ajax) {
+		echo $page->body;
+	} else {
+		include __DIR__ . "/basic-page.php";
+	}
