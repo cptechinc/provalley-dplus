@@ -79,7 +79,9 @@ $(function() {
 
 			if (json) {
 				var pricing = JSON.parse(inputs.price.attr('data-json'));
-				formLookup.updatePricingInput(pricing);
+				formLookup.updatePricingInput(pricing, function() {
+
+				});
 			} else {
 				$('#loading-modal').modal('show');
 				formLookup.updatePricing(function() {

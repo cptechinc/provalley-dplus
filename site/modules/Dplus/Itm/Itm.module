@@ -89,6 +89,17 @@ class Itm extends WireData implements Module {
 		return $q->findOne();
 	}
 
+	/**
+	 * Return ItemMasterItem
+	 * @param  string $itemID Item ID
+	 * @return ItemMasterItem
+	 */
+	public function item($itemID) {
+		$q = $this->get_query();
+		$q->filterByItemid($itemID);
+		return $q->findOne();
+	}
+
 	public function description($itemID) {
 		$q = $this->get_query();
 		$q->filterByItemid($itemID);
