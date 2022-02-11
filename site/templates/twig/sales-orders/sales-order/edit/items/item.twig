@@ -24,7 +24,6 @@
 						'name': 'qty', 'value': detail.qty|number_format(eso.decimal_places_qty()),
 						'class_add': [
 							'text-right',
-							'qty-input'
 						],
 						'attributes': {
 							'disabled': user.is_editingorder(order.ordernumber) ? false : true
@@ -44,7 +43,6 @@
 							'name': 'price', 'value': detail.price|number_format(eso.decimal_places_price()),
 							'class_add': [
 								'text-right',
-								'qty-input'
 							],
 							'attributes': {
 								'data-allowdiscount': item.allow_discount() ? 'Y' : 'N',
@@ -57,7 +55,7 @@
 			</div>
 			<div class="col-sm-2 mb-2 text-right">
 				<div class="d-block d-sm-none">
-					<b>Qty</b>
+					<b>Total</b>
 				</div>
 				$ <span class="total-price">{{ detail.totalprice|currency }}</span>
 			</div>

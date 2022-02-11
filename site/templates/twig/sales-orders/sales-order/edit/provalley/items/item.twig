@@ -21,8 +21,7 @@
 				{% include 'util/form/input.twig' with {
 						'name': 'qty', 'value': detail.qty|number_format(eso.decimal_places_qty()),
 						'class_add': [
-							'text-right',
-							'qty-input'
+							'text-right'
 						],
 						'attributes': {
 							'disabled': user.is_editingorder(order.ordernumber) ? false : true,
@@ -53,7 +52,6 @@
 							'name': 'price', 'value': detail.price|number_format(eso.decimal_places_price()),
 							'class_add': [
 								'text-right',
-								'qty-input'
 							],
 							'attributes': {
 								'data-allowdiscount': item.allow_discount() ? 'Y' : 'N',
