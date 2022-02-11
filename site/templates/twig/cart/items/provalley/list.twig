@@ -1,0 +1,23 @@
+<div class="row">
+	<div class="col-6">
+		<h3 class="font-weight-bold text-secondary mt-4">Cart Items</h3>
+	</div>
+	<div class="col-6">
+		<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#last-sales-modal">
+			View Customer's Popular Items
+		</button>
+	</div>
+</div>
+<div class="bg-dark text-white font-weight-bold p-3 d-none d-sm-block">
+	<div class="row">
+		<div class="col-sm-3">Item</div>
+		<div class="col-sm-1 text-right">Cases</div>
+		<div class="col-sm-1 text-right">Weight</div>
+		<div class="col-sm-2 text-right">Price</div>
+		<div class="col-sm-2 text-right">Amount</div>
+		<div class="col-sm-3 "></div>
+	</div>
+</div>
+{% for detail in cart.getItems() %}
+	{% include 'cart/items/provalley/item.twig' %}
+{% endfor %}

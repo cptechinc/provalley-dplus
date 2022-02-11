@@ -1,0 +1,40 @@
+
+<div class="pt-3">
+	<h5>Actions</h5>
+	<div class="form-row">
+		{% if user.has_function('eso') %}
+			<div class="col-6 col-sm-4 mb-3">
+				<a href="{{ page.createOrderUrl() }}" class="btn btn-primary">
+					<span class="fa-stack fa-md" aria-hidden="true">
+						<i class="fa fa-usd fa-stack-1x"></i>
+						<i class="fa fa-file-o fa-stack-2x"></i>
+					</span>
+					&nbsp;
+					Create Order
+				</a>
+			</div>
+		{% endif %}
+		{% if user.has_function('eqo') %}
+			<div class="col-6 col-sm-4 mb-3">
+				<a href="{{ page.createQuoteUrl() }}" class="btn btn-primary">
+					<span class="fa-stack fa-md" aria-hidden="true">
+						<i class="fa fa-quote-left fa-stack-1x"></i>
+						<i class="fa fa-file-o fa-stack-2x"></i>
+					</span>
+					&nbsp;
+					Create Quote
+				</a>
+			</div>
+		{% endif %}
+		<div class="col-6 col-sm-4 mb-3">
+			<a href="{{ page.emptyCartUrl() }}" class="btn btn-secondary">
+				<span class="fa-stack fa-md" aria-hidden="true">
+					<i class="fa fa-bars fa-stack-1x"></i>
+					<i class="fa fa-file-o fa-stack-2x"></i>
+				</span>
+				&nbsp;
+				Clear Cart
+			</a>
+		</div>
+	</div>
+</div>

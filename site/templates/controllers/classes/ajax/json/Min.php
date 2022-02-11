@@ -5,13 +5,17 @@ use CountryCodeQuery, CountryCode;
 use WarehouseBinQuery, WarehouseBin;
 // ProcessWire Classes, Modules
 use ProcessWire\Module, ProcessWire\ProcessWire;
+// Dplus CRUD
+use Dplus\Min\Inmain\Itm\Substitutes as ItmSub;
+use Dplus\Min\Inmain\Itm\Options as ItmOptions;
 // Dplus Validators
+use Dplus\CodeValidators as  Validators;
 use Dplus\CodeValidators\Min as MinValidator;
 use Dplus\CodeValidators\Min\Upcx as UpcxValidator;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 
-class Min extends AbstractController {
+class Min extends Controller {
 	public static function test($data) {
 		return 'test';
 	}
@@ -119,14 +123,14 @@ class Min extends AbstractController {
 	}
 
 	public static function validateItemid($data) {
-		$fields = ['itemID|text'];
+		$fields = ['itemID|text', 'jqv|bool'];
 		$data = self::sanitizeParametersShort($data, $fields);
 		$validate = self::validator();
 
-		if ($validate->itemid($data->itemID) === false) {
-			return "$data->itemID not found";
+		if ($validate->itemid($data->itemID)) {
+			return true;
 		}
-		return true;
+		return $data->jqv ? "$data->itemID not found" : false;
 	}
 
 	public static function getItm($data) {
@@ -175,12 +179,19 @@ class Min extends AbstractController {
 	}
 
 	public static function validateWarehouseid($data) {
-		$fields = ['whseID|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		$fields = ['whseID|text', 'id|text', 'jqv|bool'];
+		if (empty($data->whseID) === false) {
+			$data->id = $data->whseID;
+		}
+		self::sanitizeParametersShort($data, $fields);
 		$validate = self::validator();
 
-		if ($validate->whseid($data->whseID) === false && $data->whseID != '**') {
-			return "Warehouse ID $data->whseID not found";
+		if ($data->id == '**') {
+			return true;
+		}
+
+		if ($validate->whseid($data->id) === false) {
+			return $data->jqv ? "Warehouse ID $data->id not found" : false;
 		}
 		return true;
 	}
@@ -201,25 +212,36 @@ class Min extends AbstractController {
 	}
 
 	public static function validateItmpExists($data) {
-		$fields = ['loginID|text', 'userID|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		$fields = ['loginID|text', 'jqv|bool', 'new|bool'];
+		self::sanitizeParametersShort($data, $fields);
 		$itmp = self::pw('modules')->get('Itmp');
-		$validate = self::validator();
 
-		if ($itmp->exists($loginID) === false) {
-			return "ITMP for $loginID not found";
+		$exists = $itmp->exists($data->loginID);
+
+		if ($data->jqv === false) {
+			if ($data->new) {
+				return $exists === false;
+			}
+			return $exists;
+		}
+
+		if ($exists === false) {
+			if ($data->new) {
+				return "$data->loginID already exists";
+			}
+			return "$data->loginID not found";
 		}
 		return true;
 	}
 
 	public static function validateUpc($data) {
 		$fields = ['upc|text', 'jqv|bool', 'new|bool'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		self::sanitizeParametersShort($data, $fields);
 		$validate = new UpcxValidator();
 
 		$exists = $validate->exists($data->upc);
 
-		if ($data->jqv === false) {
+		if (boolval($data->jqv) === false) {
 			return $exists;
 		}
 
@@ -229,6 +251,25 @@ class Min extends AbstractController {
 		}
 
 		return $exists ? true : "UPC $data->upc not found";
+	}
+
+	public static function validateUpcXref($data) {
+		$fields = ['upc|text', 'itemID|text', 'jqv|bool', 'new|bool'];
+		self::sanitizeParametersShort($data, $fields);
+		$validate = new UpcxValidator();
+
+		$exists = $validate->exists($data->upc, $data->itemID);
+
+		if (boolval($data->jqv) === false) {
+			return $exists;
+		}
+
+		// JQuery Validate
+		if ($data->new) { // If new, check that upc doesn't already exist.
+			return $exists ? "UPC X-Ref Already Exists" : true;
+		}
+
+		return $exists ? true : "UPC X-Ref not found";
 	}
 
 	public static function validateUpcPrimary($data) {
@@ -257,6 +298,198 @@ class Min extends AbstractController {
 		}
 	}
 
+	public static function getPrimaryUpc($data) {
+		$fields = ['itemID|text'];
+		self::sanitizeParametersShort($data, $fields);
+		$upcx = self::pw('modules')->get('XrefUpc');
+
+		if ($upcx->xref_primary_by_itemid_exists($data->itemID) === false) {
+			return false;
+		}
+		$xref = $upcx->xref_primary_by_itemid($data->itemID);
+		return [
+			'upc'    => $xref->upc,
+			'itemid' => $xref->itemid
+		];
+	}
+
+	public static function validateI2iExists($data) {
+		$fields = ['parentID|text', 'childID|text', 'jqv|bool'];
+		self::sanitizeParametersShort($data, $fields);
+		$validate = self::validator();
+
+		$exists = $validate->i2i($data->parentID, $data->childID);
+
+		if (boolval($data->jqv) === false) {
+			return $exists;
+		}
+
+		// JQuery Validate
+		if ($data->new) { // If new, check that upc doesn't already exist.
+			return $exists ? "Item to Item Already Exists" : true;
+		}
+
+		return $exists ? true : "Item to Item X-Ref not found";
+	}
+
+	public static function validateIarnExists($data) {
+		$fields = ['id|text', 'new|bool', 'jqv|bool'];
+		self::sanitizeParametersShort($data, $fields);
+		$validate = self::validator();
+		$exists = $validate->iarn($data->id);
+
+		if (boolval($data->jqv) === false) {
+			if ($data->new) {
+				return $exists === false;
+			}
+			return $exists;
+		}
+
+		// JQuery Validate
+		if ($data->new) { // If new, check that upc doesn't already exist.
+			return $exists ? "Inv Adjustment Code Already Exists" : true;
+		}
+
+		return $exists ? true : "Inv Adjustment Code not found";
+	}
+
+	public static function validateItmWhse($data) {
+		$fields = ['itemID|text', 'whseID|text', 'new|bool', 'jqv|bool'];
+		self::sanitizeParametersShort($data, $fields);
+		$validate = self::validator();
+		$exists = $validate->itmWhse($data->itemID, $data->whseID);
+
+		if (boolval($data->jqv) === false) {
+			if ($data->new) {
+				return $exists === false;
+			}
+			return $exists;
+		}
+
+		// JQuery Validate
+		if ($data->new) { // If new, check that upc doesn't already exist.
+			return $exists ? "ITM Warehouse Already Exists" : true;
+		}
+
+		return $exists ? true : "ITM Warehouse not found";
+	}
+
+	public static function validateItmSub($data) {
+		$fields = ['itemID|text', 'subitemID|text', 'jqv|bool', 'new|bool'];
+		self::sanitizeParametersShort($data, $fields);
+		$itmSub = new ItmSub();
+		$itmSub->init();
+
+		$exists = $itmSub->exists($data->itemID, $data->subitemID);
+
+		if (boolval($data->jqv) === false) {
+			if (boolval($data->new) === false) { // CHECK against existing Items
+				return $exists;
+			}
+			// CHECK if Sub could exist
+			return $exists === false;
+		}
+
+		// JQV
+		if (boolval($data->new) === false) { // CHECK against existing Items
+			return $exists ? true : "$data->itemID Substitute $data->subitemID not found";
+		}
+
+		$exists === false ? true : "$data->itemID Substitute $data->subitemID already exists";
+	}
+
+
+	public static function validateItmShortitemid($data) {
+		$fields = ['itemID|text', 'shortitemID|text', 'jqv|bool', 'new|bool'];
+		self::sanitizeParametersShort($data, $fields);
+		$validate = new Validator\Mso\Cxm();
+		$exists = $validate->shortitemExists($data->shortitemID);
+
+		if (boolval($data->jqv) === false) {
+			if (boolval($data->new) === false) { // CHECK against existing Items
+				return $exists;
+			}
+			// CHECK if Sub could exist
+			return $exists === false;
+		}
+
+		// JQV
+		if (boolval($data->new) === false) { // CHECK against existing Items
+			return $exists ? true : "Short Item $data->shortitemID Item not found";
+		}
+
+		$exists === false ? true : "Short Item $data->shortitemID already exists";
+	}
+
+	public static function validateItmShortitemidAvailable($data) {
+		$fields = ['itemID|text', 'shortitemID|text', 'jqv|bool'];
+		self::sanitizeParametersShort($data, $fields);
+		$validate = new Validators\Mso\Cxm();
+		$exists = $validate->shortitemExists($data->shortitemID);
+		if ($exists === false) {
+			return true;
+		}
+		$cxm = self::pw('modules')->get('XrefCxm');
+		$xref = $cxm->xref_shortitem_by_custitemid($data->shortitemID);
+		$available = $xref->itemid == $data->itemID;
+		if (boolval($data->jqv) === false) {
+			return $available;
+		}
+		return $available === false ? "Short Item $data->shortitemID already exists" : 'true';
+	}
+
+	public static function getUom($data) {
+		$fields = ['code|text'];
+		self::sanitizeParametersShort($data, $fields);
+		$umm = self::pw('modules')->get('CodeTablesUmm');
+		if ($umm->code_exists($data->code) === false) {
+			return false;
+		}
+		$uom = $umm->get_code($data->code);
+		return [
+			'code'        => $uom->code,
+			'description' => $uom->description,
+			'conversion'  => $uom->conversion
+		];
+	}
+
+	public static function validateAddm($data) {
+		$fields = ['itemID|text', 'addonID|text', 'jqv|bool', 'new|bool'];
+		self::sanitizeParametersShort($data, $fields);
+		$validate = self::validator();
+
+		$exists = $validate->addm($data->itemID, $data->addonID);
+
+		if (boolval($data->jqv) === false) {
+			if (boolval($data->new)) {
+				if ($data->itemID === $data->addonID) {
+					return false;
+				}
+				return $exists === false;
+			}
+			return $exists;
+		}
+
+		// JQuery Validate
+		if (boolval($data->new)) { // If new, check that Add-On doesn't already exist or Can't Exist
+			if ($data->itemID === $data->addonID) {
+				return $data->jqv ? "Add-On Item ID cannot = the Item ID" : false;
+			}
+			return $exists ? "Add-On Item Already Exists" : true;
+		}
+
+		return $exists ? true : "Add-On Item not found";
+	}
+
+	public static function getInvOptCodeNotes($data) {
+		$fields = ['itemID|text', 'type|text'];
+		self::sanitizeParametersShort($data, $fields);
+		$qnotes = ItmOptions\Qnotes::getInstance();
+		if ($qnotes->notesExist($data->itemID, $data->type) === false) {
+			return false;
+		}
+		return $qnotes->notesJson($data->itemID, $data->type);
+	}
 
 	private static function validator() {
 		return new MinValidator();

@@ -5,10 +5,11 @@ use ProcessWire\Page;
 use Dplus\Filters\Mso\SalesOrder   as SalesOrderFilter;
 use Dplus\Filters\Mso\SalesHistory as SalesHistoryFilter;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 use Controllers\Dplus\Dashboard\Common as DefaultDashboard;
+use Controllers\Mso\SalesOrder\SalesOrder as SoController;
 
-class Dashboard extends AbstractController {
+class Dashboard extends Controller {
 	const DEFAULT = 'common';
 
 	public static function dashboard($data) {
@@ -36,5 +37,21 @@ class Dashboard extends AbstractController {
 
 	public static function getDashboardNamespace() {
 		return __NAMESPACE__.'\Dashboard';
+	}
+
+	public static function initHooks() {
+		$m = self::pw('modules')->get('DpagesMso');
+
+		$m->addHook('Page(template=dashboard)::orderUrl', function($event) {
+			$event->return = SoController::orderUrl($event->arguments(0));
+		});
+
+		$m->addHook('Page(template=dashboard)::orderListUrl', function($event) {
+			$event->return = SoController::orderListUrl($event->arguments(0));
+		});
+
+		$m->addHook('Page(template=dashboard)::orderHistoryListUrl', function($event) {
+			$event->return = SoController::orderHistoryListUrl($event->arguments(0));
+		});
 	}
 }

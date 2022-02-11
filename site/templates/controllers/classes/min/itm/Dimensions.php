@@ -3,21 +3,24 @@
 use ItemMasterItemQuery, ItemMasterItem;
 // ProcessWire Classes, Modules
 use ProcessWire\Page;
+// Dplus CRUD
 use Dplus\Min\Inmain\Itm\Dimensions as DimensionsCRUD;
-// Mvc Controllers
-use Controllers\Min\Itm\ItmFunction;
 
-class Dimensions extends ItmFunction {
+
+class Dimensions extends Base {
 	const PERMISSION_ITMP = '';
 
 	private static $dim;
 
+/* =============================================================
+	Indexes
+============================================================= */
 	public static function index($data) {
 		$fields = ['itemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		self::sanitizeParametersShort($data, $fields);
 
 		if (self::validateItemidAndPermission($data) === false) {
-			return self::pw('page')->body;
+			return self::displayAlertUserPermission($data);
 		}
 
 		if (empty($data->action) === false) {
@@ -33,7 +36,7 @@ class Dimensions extends ItmFunction {
 
 	public static function handleCRUD($data) {
 		if (self::validateItemidAndPermission($data) === false) {
-			return self::pw('page')->body;
+			return self::displayAlertUserPermission($data);
 		}
 
 		$fields   = ['itemID|text', 'action|text'];
@@ -47,13 +50,13 @@ class Dimensions extends ItmFunction {
 		self::pw('session')->redirect(self::itmUrlDimensions($data->itemID), $http301 = false);
 	}
 
-	public static function dim($data) {
+	private static function dim($data) {
 		if (self::validateItemidAndPermission($data) === false) {
-			return self::pw('page')->body;
+			return self::displayAlertUserPermission($data);
 		}
 
 		$fields = ['itemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		self::sanitizeParametersShort($data, $fields);
 		if ($data->action) {
 			return self::handleCRUD($data);
 		}
@@ -64,6 +67,9 @@ class Dimensions extends ItmFunction {
 		return self::dimDisplay($data);
 	}
 
+/* =============================================================
+	Displays
+============================================================= */
 	private static function dimDisplay($data) {
 		$config  = self::pw('config');
 		$session = self::pw('session');
@@ -75,8 +81,8 @@ class Dimensions extends ItmFunction {
 		$html .= $config->twig->render('items/itm/bread-crumbs.twig');
 		$html .= self::lockItem($data->itemID);
 		$html .= $config->twig->render('items/itm/itm-links.twig');
-		if ($session->getFor('response', 'itm')) {
-			$html .= $config->twig->render('items/itm/response-alert.twig', ['response' => $session->getFor('response', 'itm')]);
+		if ($itm->getResponse()) {
+			$html .= $config->twig->render('items/itm/response-alert.twig', ['response' => $itm->getResponse()]);
 		}
 		if ($session->getFor('response', 'itm-dim')) {
 			$html .= $config->twig->render('items/itm/response-alert-new.twig', ['response' => $session->getFor('response', 'itm-dim')]);
@@ -85,6 +91,9 @@ class Dimensions extends ItmFunction {
 		return $html;
 	}
 
+/* =============================================================
+	Supplemental
+============================================================= */
 	public static function getItmDim() {
 		if (empty(self::$dim)) {
 			self::$dim = new DimensionsCRUD();

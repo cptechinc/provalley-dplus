@@ -1,5 +1,7 @@
 <?php namespace Mvc;
 
+
+use stdClass;
 use Exception;
 
 use Whoops\Run as Whoops;
@@ -73,6 +75,14 @@ class Router extends WireData {
 		$input = $this->wire('input');
 		$dispatcher = $this->dispatcher();
 		$this->routeInfo  = $dispatcher->dispatch($input->requestMethod(), $input->url());
+
+		if (array_key_exists(2, $this->routeInfo)) {
+			$params = $this->routeInfo[2];
+			if (array_key_exists('pagenbr', $params)) {
+				$input->setPageNum(intval($params['pagenbr']));
+			}
+		}
+
 		$response = '';
 
 		try {
@@ -98,6 +108,7 @@ class Router extends WireData {
 			'User ID'    => $this->wire('user')->loginid,
 			'Session ID' => session_id(),
 			'Path'       => $this->wire('input')->url(),
+			'Template-PW'   => $this->wire('page')->pw_template
 		]);
 		$whoops = new Whoops();
 		$whoops->allowQuit(false);
@@ -153,6 +164,9 @@ class Router extends WireData {
 
 		// convert array to object:
 		$vars = json_decode(json_encode($vars));
+		if (empty($vars)) {
+			$vars = new stdClass();
+		}
 		return $class::$methodName($vars);
 	}
 

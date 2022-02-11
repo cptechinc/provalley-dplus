@@ -32,7 +32,7 @@ class StockStatus extends Base {
 				$file = $report->exportSpreadsheet();
 				$mime = mime_content_type($file);
 				header('Content-Description: File Transfer');
-				header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8");
+				header("Content-Type: $mime; charset=utf-8");
 				header("Content-Disposition: attachment; filename=\"".basename($file)."\"");
 				header("Content-Transfer-Encoding: binary");
 				header("Expires: 0");

@@ -10,23 +10,23 @@ use ProcessWire\Page, ProcessWire\XrefVxm as VxmCRUD;
 // DplusFilters
 use Dplus\Filters\Map\Vxm as VxmFilter;
 // Mvc Controllers
-use Controllers\Min\Itm\Xrefs;
-use Controllers\Min\Itm\Xrefs\XrefFunction;
 use Controllers\Map\Vxm as VxmController;
 
-class Vxm extends XrefFunction {
+class Vxm extends Base {
 	const PERMISSION_ITMP = 'xrefs';
 
+/* =============================================================
+	Indexes
+============================================================= */
 	public static function index($data) {
 		$fields = ['itemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
-		$page = self::pw('page');
+		self::sanitizeParametersShort($data, $fields);
 
 		if (self::validateItemidAndPermission($data) === false) {
-			return self::pw('page')->body;
+			return self::displayAlertUserPermission($data);
 		}
 
-		$page->show_breadcrumbs = false;
+		self::pw('page')->show_breadcrumbs = false;
 
 		if (empty($data->action) === false) {
 			return self::handleCRUD($data);
@@ -39,9 +39,8 @@ class Vxm extends XrefFunction {
 	}
 
 	public static function handleCRUD($data) {
-		$page    = self::pw('page');
 		if (self::validateItemidAndPermission($data) === false) {
-			return self::pw('page')->body;
+			return self::displayAlertUserPermission($data);
 		}
 		$fields = ['itemID|text', 'vendorID|text', 'vendoritemID|text', 'action|text'];
 		$data  = self::sanitizeParameters($data, $fields);
@@ -67,17 +66,7 @@ class Vxm extends XrefFunction {
 		$session->redirect($url, $http301 = false);
 	}
 
-	public static function xref($data) {
-		if (self::validateItemidAndPermission($data) === false) {
-			return self::pw('page')->body;
-		}
-
-		$fields = ['itemID|text', 'vendorID|text', 'vendoritemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
-
-		if ($data->action) {
-			return self::handleCRUD($data);
-		}
+	private static function xref($data) {
 		self::initHooks();
 
 		$vxm     = VxmController::vxmMaster();
@@ -85,7 +74,7 @@ class Vxm extends XrefFunction {
 
 		$page    = self::pw('page');
 		$page->headline = "ITM: $data->itemID VXM $xref->vendorid-$xref->vendoritemid";
-		$page->js .= self::pw('config')->twig->render('items/vxm/item/form/js.twig', ['vxm' => $vxm]);
+		$page->js .= self::pw('config')->twig->render('items/vxm/xref/form/js.twig', ['vxm' => $vxm]);
 
 		if ($xref->isNew()) {
 			$xref->setItemid($data->itemID);
@@ -96,6 +85,27 @@ class Vxm extends XrefFunction {
 		return $html;
 	}
 
+	private static function list($data) {
+		self::sanitizeParametersShort($data, ['itemID|text', 'q|text']);
+		self::initHooks();
+		VxmController::vxmMaster()->recordlocker->deleteLock();
+
+		$page    = self::pw('page');
+		$filter = new VxmFilter();
+		$filter->itemid($data->itemID);
+		$filter->sortby($page);
+		$xrefs = $filter->query->paginate(self::pw('input')->pageNum, 10);
+		$page->title = "VXM";
+		$page->headline = "ITM: $data->itemID VXM";
+		$page->js .= self::pw('config')->twig->render('items/vxm/list/xref/js.twig');
+		$html = self::listDisplay($data, $xrefs);
+		self::pw('session')->removeFor('response', 'vxm');
+		return $html;
+	}
+
+/* =============================================================
+	Displays
+============================================================= */
 	private static function xrefDisplay($data, ItemXrefVendor $xref) {
 		$qnotes = self::pw('modules')->get('QnotesItemVxm');
 		$itm    = self::getItm();
@@ -122,27 +132,6 @@ class Vxm extends XrefFunction {
 		if ($session->getFor('response','vxm')) {
 			$html .= $config->twig->render('items/itm/response-alert.twig', ['response' => $session->getFor('response','vxm')]);
 		}
-		return $html;
-	}
-
-	public static function list($data) {
-		if (self::validateItemidAndPermission($data) === false) {
-			return self::pw('page')->body;
-		}
-		self::initHooks();
-		$data    = self::sanitizeParametersShort($data, ['itemID|text', 'q|text']);
-		VxmController::vxmMaster()->recordlocker->deleteLock();
-
-		$page    = self::pw('page');
-		$filter = new VxmFilter();
-		$filter->itemid($data->itemID);
-		$filter->sortby($page);
-		$xrefs = $filter->query->paginate(self::pw('input')->pageNum, 10);
-		$page->title = "VXM";
-		$page->headline = "ITM: $data->itemID VXM";
-		$page->js .= self::pw('config')->twig->render('items/vxm/list/item/js.twig');
-		$html = self::listDisplay($data, $xrefs);
-		self::pw('session')->removeFor('response', 'vxm');
 		return $html;
 	}
 
@@ -190,7 +179,7 @@ class Vxm extends XrefFunction {
 	Hook Functions
 ============================================================= */
 	public static function initHooks() {
-		$m = VxmController::vxmMaster();
+		$m = self::pw('modules')->get('DpagesMin');
 
 		$m->addHook('Page(pw_template=itm)::xrefUrl', function($event) {
 			$p = $event->object;

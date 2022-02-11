@@ -2,12 +2,13 @@
 // ProcessWire Classes, Modules
 use ProcessWire\Page;
 // Dplus Filters
+use Dplus\Filters;
 use Dplus\Filters\Mso\SalesOrder   as SalesOrderFilter;
 use Dplus\Filters\Mso\SalesHistory as SalesHistoryFilter;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 
-class Common extends AbstractController {
+class Common extends Controller {
 	public static function dashboard($data) {
 		$html = '';
 		$html .= self::dashboardUserActions($data);
@@ -66,7 +67,7 @@ class Common extends AbstractController {
 			'invoices'       => $orders,
 			'count'          => $orders->getNbResults(),
 			'url_invoice'      => $pages->get('pw_template=sales-order-view')->url,
-			'url_invoice_list' => $pages->get('pw_template=sales-history-orders')->url
+			'url_invoice_list' => $pages->get('pw_template=sales-orders-invoice')->url
 		];
 		$html = '';
 		$html .= $config->twig->render("dashboard/components/sales-history.twig", $params);
@@ -77,12 +78,11 @@ class Common extends AbstractController {
 		$pages  = self::pw('pages');
 		$input  = self::pw('input');
 		$config = self::pw('config');
-		$filter = self::pw('modules')->get('FilterQuotes');
-		$filter->init_query(self::pw('user'));
-		$filter->filter_query($input);
-		$query = $filter->get_query();
-		$query->orderByDate_quoted('DESC');
-		$quotes = $query->paginate($input->pageNum, 10);
+		$filter = new Filters\Mqo\Quote();
+		$filter->user(self::pw('user'));
+		$filter->filterInput($input);
+		$filter->query->orderByDate_quoted('DESC');
+		$quotes = $filter->query->paginate($input->pageNum, 10);
 
 		$params = [
 			'quotes'         => $quotes,

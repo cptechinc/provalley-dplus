@@ -1,21 +1,19 @@
 <?php namespace Controllers\Mii\Ii;
-// Purl\Url
+// Purl URI Manipulation Library
 use Purl\Url as Purl;
-// Dplus Validators
-use Dplus\CodeValidators\Min as MinValidator;
 // Dplus Screen Formatters
 use Dplus\ScreenFormatters\Ii\PurchaseHistory as Formatter;
-// Mvc Controllers
-use Controllers\Mii\IiFunction;
+// Dplus Document Management
+use Dplus\DocManagement\Finders\ApInvoice as Docm;
 
-class PurchaseHistory extends IiFunction {
+class PurchaseHistory extends Base {
 	const JSONCODE          = 'ii-purchase-history';
 	const PERMISSION_IIO    = 'purchasehistory';
 	const DATE_FORMAT       = 'm/d/Y';
 	const DATE_FORMAT_DPLUS = 'Ymd';
 
 /* =============================================================
-	1. Indexes
+	Indexes
 ============================================================= */
 	public static function index($data) {
 		$fields = ['itemID|text', 'refresh|bool', 'date|date'];
@@ -36,28 +34,37 @@ class PurchaseHistory extends IiFunction {
 		if (empty($data->date) === false) {
 			return self::history($data);
 		}
-		return self::dateForm($data);
+		return self::initScreen($data);
 	}
 
-	public static function history($data) {
-		if (self::validateItemidPermission($data) === false) {
-			return self::alertInvalidItemPermissions($data);
-		}
-		self::sanitizeParametersShort($data, ['itemID|text', 'date|text']);
+	private static function history($data) {
 		self::getData($data);
+		self::pw('page')->headline = "II: $data->itemID Purchase History";
+		return self::displayHistory($data);
+	}
 
-		$page    = self::pw('page');
-		$page->headline = "II: $data->itemID Purchase History";
-		$html = '';
-		$html .= self::breadCrumbs();;
-		$html .= self::display($data);
-		return $html;
+	private static function initScreen($data) {
+		$iio    = self::getIio();
+
+		$options = $iio->useriio(self::pw('user')->loginid);
+		$data->startdate = date(self::DATE_FORMAT);
+
+		if ($options->dayspurchasehistory > 0) {
+			$data->startdate = date(self::DATE_FORMAT, strtotime("-$options->dayspurchasehistory days"));
+		}
+
+		if (intval($options->datepurchasehistory) > 0) {
+			$data->startdate = date(self::DATE_FORMAT, strtotime($options->datepurchasehistory));
+		}
+		self::pw('page')->headline = "II: $data->itemID Purchase History";
+		self::pw('config')->scripts->append(self::getFileHasher()->getHashUrl('scripts/lib/jquery-validate.js'));
+		return self::displayInitialForm($data);
 	}
 
 /* =============================================================
-	2. Data Requests
+	Data Requests
 ============================================================= */
-	public static function requestJson($vars) {
+	private static function requestJson($vars) {
 		$fields = ['itemID|text', 'sessionID|text', 'date|date'];
 		self::sanitizeParametersShort($vars, $fields);
 		$vars->sessionID = empty($vars->sessionID) === false ? $vars->sessionID : session_id();
@@ -70,7 +77,7 @@ class PurchaseHistory extends IiFunction {
 	}
 
 /* =============================================================
-	3. URLs
+	URLs
 ============================================================= */
 	public static function historyUrl($itemID, $date, $refreshdata = false) {
 		$url = new Purl(self::pw('pages')->get('pw_template=ii-item')->url);
@@ -88,7 +95,7 @@ class PurchaseHistory extends IiFunction {
 	}
 
 /* =============================================================
-	4. Data Retrieval
+	Data Retrieval
 ============================================================= */
 	private static function getData($data) {
 		self::sanitizeParametersShort($data, ['itemID|text', 'date|date']);
@@ -120,12 +127,19 @@ class PurchaseHistory extends IiFunction {
 	}
 
 /* =============================================================
-	5. Displays
+	Displays
 ============================================================= */
-	protected static function display($data) {
+	private static function displayHistory($data) {
+		$html = '';
+		$html .= self::breadCrumbs();;
+		$html .= self::displayData($data);
+		return $html;
+	}
+
+	protected static function displayData($data) {
 		self::init();
 		$jsonm  = self::getJsonModule();
-		$json    = $jsonm->getFile(self::JSONCODE);
+		$json   = $jsonm->getFile(self::JSONCODE);
 		$config = self::pw('config');
 
 		if ($jsonm->exists(self::JSONCODE) === false) {
@@ -140,39 +154,21 @@ class PurchaseHistory extends IiFunction {
 		$page->lastmodified = $jsonm->lastModified(self::JSONCODE);
 		$formatter = new Formatter();
 		$formatter->init_formatter();
-		$docm = self::pw('modules')->get('DocumentManagementPo');
+		$docm = new Docm();
 		return $config->twig->render('items/ii/purchase-history/display.twig', ['item' => self::getItmItem($data->itemID), 'json' => $json, 'formatter' => $formatter, 'blueprint' => $formatter->get_tableblueprint(), 'module_json' => $jsonm->jsonm, 'docm' => $docm]);
 	}
 
-	private static function dateForm($data) {
-		self::sanitizeParametersShort($data, ['itemID|text']);
-		$config = self::pw('config');
-		$page   = self::pw('page');
-		$iio    = self::getIio();
-
-		$options = $iio->useriio(self::pw('user')->loginid);
-		$startdate = date(self::DATE_FORMAT);
-
-		if ($options->dayspurchasehistory > 0) {
-			$startdate = date(self::DATE_FORMAT, strtotime("-$options->dayspurchasehistory days"));
-		}
-
-		if (intval($options->datepurchasehistory) > 0) {
-			$startdate = date(self::DATE_FORMAT, strtotime($options->datepurchasehistory));
-		}
-
-		$page->headline = "II: $data->itemID Purchase History";
+	private static function displayInitialForm($data) {
 		$html = self::breadCrumbs();
 		$html .= '<h3> Enter Starting History Date</h3>';
-		$html .= $config->twig->render('items/ii/purchase-history/date-form.twig', ['itemID' => $data->itemID, 'startdate' => $startdate]);
-		$config->scripts->append(self::getFileHasher()->getHashUrl('scripts/lib/jquery-validate.js'));
+		$html .= self::pw('config')->twig->render('items/ii/purchase-history/date-form.twig', ['itemID' => $data->itemID, 'startdate' => $data->startdate]);
 		return $html;
 	}
 
 /* =============================================================
-	6. Supplements
+	Hooks
 ============================================================= */
-	public static function init() {
+	private static function init() {
 		$m = self::pw('modules')->get('DpagesMii');
 
 		$m->addHook('Page(pw_template=ii-item)::documentListUrl', function($event) {

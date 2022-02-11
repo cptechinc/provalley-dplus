@@ -47,6 +47,7 @@ class SalesOrder extends Base {
 		$html .= $config->twig->render('util/paginator/propel.twig', ['pager' => $orders]);
 		return $html;
 	}
+
 /* =============================================================
 	Url Functions
 ============================================================= */
@@ -75,5 +76,9 @@ class SalesOrder extends Base {
 ============================================================= */
 	public static function initHooks() { // TODO HOOKS for CI
 		$m = self::pw('modules')->get('DpagesMso');
+
+		$m->addHook('Page(pw_template=sales-orders)::orderUrl', function($event) {
+			$event->return = self::orderUrl($event->arguments(0));
+		});
 	}
 }

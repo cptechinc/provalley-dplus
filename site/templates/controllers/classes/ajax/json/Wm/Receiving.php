@@ -11,9 +11,9 @@ use Dplus\CodeValidators\Mpo as MpoValidator;
 // Dplus Wm
 use Dplus\Wm\Receiving\Receiving as ReceivingCRUD;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 
-class Receiving extends AbstractController {
+class Receiving extends Controller {
 
 	public static function requireLotserial($data) {
 		$fields = ['itemID|text', 'jqv|bool', 'lotserial|text'];
@@ -35,7 +35,7 @@ class Receiving extends AbstractController {
 		return $data->jqv ? true : false;
 	}
 
-	public static function allowItemOnOrder($data) {
+	static public function allowItemOnOrder($data) {
 		self::sanitizeParametersShort($data, ['itemID|text', 'ponbr|ponbr', 'jqv|bool']);
 		$r = new ReceivingCRUD();
 		$r->setPonbr($data->ponbr);
@@ -47,7 +47,7 @@ class Receiving extends AbstractController {
 		return $data->jqv ? "Item Not Allowed on PO" : false;
 	}
 
-	public static function doesQtyAddNeedWarning($data) {
+	static public function doesQtyAddNeedWarning($data) {
 		$fields = ['itemID|text', 'qty|float', 'ponbr|ponbr'];
 		self::sanitizeParametersShort($data, $fields);
 		$validate = self::validatorMin();
@@ -67,7 +67,7 @@ class Receiving extends AbstractController {
 		return $qtyReceived > $qtyOrdered;
 	}
 
-	public static function getLineLotserial($data) {
+	static public function getLineLotserial($data) {
 		$fields = ['ponbr|ponbr', 'linenbr|int', 'lotserial|text', 'binID|text'];
 		self::sanitizeParametersShort($data, $fields);
 		$validate = self::validatorMpo();
@@ -104,21 +104,6 @@ class Receiving extends AbstractController {
 			'qty' => [
 				'received'    => $r->items->getQtyReceivedLineLotserial($lot->linenbr, $lot->lotserial, $lot->binid),
 			],
-		];
-		return $data;
-	}
-
-	public static function getBin($data) {
-		$fields = ['ponbr|ponbr', 'binID|text'];
-		self::sanitizeParametersShort($data, $fields);
-		self::pw('modules')->get('WarehouseManagement');
-
-		$r = new ReceivingCRUD();
-		$r->setPonbr($data->ponbr);
-		$r->init();
-		$data = [
-			'ponbr'    => $data->ponbr,
-			'lotcount' => $r->items->countBinLotserials($data->binID)
 		];
 		return $data;
 	}

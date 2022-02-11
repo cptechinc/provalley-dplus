@@ -10,19 +10,19 @@ use ProcessWire\Page, ProcessWire\Kim as KimCRUD;
 // Dplus Filters
 use Dplus\Filters\Mki\Kim as FilterKim;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 
-class Kim extends AbstractController {
+class Kim extends Controller {
 	private static $kim;
 
 	public static function index($data) {
 		$fields = [
-			'kitID'     => ['sanitizer' => 'text'],
-			'component' => ['sanitizer' => 'text'],
-			'q'         => ['sanitizer' => 'text'],
-			'action'    => ['sanitizer' => 'text']
+			'kitID'     => 'sanitizer|text',
+			'component' => 'sanitizer|text',
+			'q'         => 'sanitizer|text',
+			'action'    => 'sanitizer|text'
 		];
-		$data = self::sanitizeParameters($data, $fields);
+		$data = self::sanitizeParametersShort($data, $fields);
 		$page = self::pw('page');
 		$page->show_breadcrumbs = false;
 
@@ -46,7 +46,7 @@ class Kim extends AbstractController {
 			$kim = self::pw('modules')->get('Kim');
 			$kim->process_input(self::pw('input'));
 		}
-		self::pw('session')->redirect(self::pw('page')->kitURL($data->kitID), $http301);
+		self::pw('session')->redirect(self::kitUrl($data->kitID, $data->component), $http301);
 	}
 
 	public static function kit($data) {
@@ -89,7 +89,7 @@ class Kim extends AbstractController {
 	private static function kitComponentDisplay($data) {
 		$kim    = self::getKim();
 		$kim->init_configs();
-		$kit = $kim->kit($data->kitID);
+		$kit = $kim->getCreateKit($data->kitID);
 		$component = $kim->component->getCreateComponent($data->kitID, $data->component);
 
 		$html = '';
@@ -120,7 +120,7 @@ class Kim extends AbstractController {
 		$filter = new FilterKim();
 		$filter->init();
 		if ($data->q) {
-			$page->headline = "KIM: Searching for '$data->q'";
+			self::pw('page')->headline = "KIM: Searching for '$data->q'";
 			$filter->search($data->q);
 		}
 		$kits = $filter->query->paginate(self::pw('input')->pageNum, self::pw('session')->display);

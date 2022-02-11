@@ -11,9 +11,9 @@ use ProcessWire\Module, ProcessWire\ProcessWire;
 use Dplus\CodeValidators\Mso     as MsoValidator;
 use Dplus\CodeValidators\Mso\Cxm as CxmValidator;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 
-class Mso extends AbstractController {
+class Mso extends Controller {
 	public static function test() {
 		return 'test';
 	}
@@ -138,6 +138,40 @@ class Mso extends AbstractController {
 			return "X-ref $data->custID-$data->custitemID not found";
 		}
 		return $exists;
+	}
+
+	public static function getPricing($data) {
+		$fields = ['itemID|text', 'custID|text'];
+		self::sanitizeParametersShort($data, $fields);
+		$pricingM = self::pw('modules')->get('ItemPricing');
+		$pricingM->request_search($data->itemID, $data->custID);
+
+		if ($pricingM->has_pricing($data->itemID) === false) {
+			return false;
+		}
+		$pricing = $pricingM->get_pricing($data->itemID);
+		$pricebreaks = [
+			['qty' => $pricing->priceqty1, 'price' => $pricing->priceprice1]
+		];
+
+		for ($i = 2; $i <= 6; $i++) {
+			$colQty   = 'priceqty' . $i;
+			$colPrice = 'priceprice' . $i;
+
+			if ($pricing->$colQty > 0) {
+				$pricebreaks[] = [
+					'qty'   => $pricing->$colQty,
+					'price' => $pricing->$colPrice
+				];
+			}
+		}
+
+		$response = [
+			'itemid' => $data->itemID,
+			'price'  => $pricing->price,
+			'pricebreaks' => $pricebreaks
+		];
+		return $response;
 	}
 
 	private static function validator() {

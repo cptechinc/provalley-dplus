@@ -1,19 +1,17 @@
 <?php namespace Controllers\Mii\Ii;
-// Purl\Url
+// Purl URI Manipulation Library
 use Purl\Url as Purl;
-// Dplus Validators
-use Dplus\CodeValidators\Min as MinValidator;
 // Dplus Screen Formatters
 use Dplus\ScreenFormatters\Ii\PurchaseOrders as Formatter;
-// Mvc Controllers
-use Controllers\Mii\IiFunction;
+// Dplus Document Management
+use Dplus\DocManagement\Finders\PurchaseOrder as Docm;
 
-class PurchaseOrders extends IiFunction {
+class PurchaseOrders extends Base {
 	const JSONCODE          = 'ii-purchase-orders';
 	const PERMISSION_IIO    = 'purchaseorders';
 
 /* =============================================================
-	1. Indexes
+	Indexes
 ============================================================= */
 	public static function index($data) {
 		$fields = ['itemID|text', 'refresh|bool'];
@@ -30,25 +28,17 @@ class PurchaseOrders extends IiFunction {
 		return self::orders($data);
 	}
 
-	public static function orders($data) {
-		if (self::validateItemidPermission($data) === false) {
-			return self::alertInvalidItemPermissions($data);
-		}
+	private static function orders($data) {
 		self::sanitizeParametersShort($data, ['itemID|text']);
 		self::getData($data);
-
-		$page    = self::pw('page');
-		$page->headline = "II: $data->itemID Purchase Orders";
-		$html = '';
-		$html .= self::breadCrumbs();;
-		$html .= self::display($data);
-		return $html;
+		self::pw('page')->headline = "II: $data->itemID Purchase Orders";
+		return self::displayOrders($data);
 	}
 
 /* =============================================================
-	2. Data Requests
+	Data Requests
 ============================================================= */
-	public static function requestJson($vars) {
+	private static function requestJson($vars) {
 		$fields = ['itemID|text', 'sessionID|text'];
 		self::sanitizeParametersShort($vars, $fields);
 		$vars->sessionID = empty($vars->sessionID) === false ? $vars->sessionID : session_id();
@@ -57,7 +47,7 @@ class PurchaseOrders extends IiFunction {
 	}
 
 /* =============================================================
-	3. URLs
+	URLs
 ============================================================= */
 	public static function ordersUrl($itemID, $refreshdata = false) {
 		$url = new Purl(self::pw('pages')->get('pw_template=ii-item')->url);
@@ -71,7 +61,7 @@ class PurchaseOrders extends IiFunction {
 	}
 
 /* =============================================================
-	4. Data Retrieval
+	Data Retrieval
 ============================================================= */
 	private static function getData($data) {
 		$data    = self::sanitizeParametersShort($data, ['itemID|text']);
@@ -99,9 +89,16 @@ class PurchaseOrders extends IiFunction {
 	}
 
 /* =============================================================
-	5. Displays
+	Displays
 ============================================================= */
-	private static function display($data) {
+	private static function displayOrders($data) {
+		$html = '';
+		$html .= self::breadCrumbs();;
+		$html .= self::displayData($data);
+		return $html;
+	}
+
+	private static function displayData($data) {
 		self::init();
 		$jsonm  = self::getJsonModule();
 		$json    = $jsonm->getFile(self::JSONCODE);
@@ -119,14 +116,14 @@ class PurchaseOrders extends IiFunction {
 		$page->lastmodified = $jsonm->lastModified(self::JSONCODE);
 		$formatter = new Formatter();
 		$formatter->init_formatter();
-		$docm = self::pw('modules')->get('DocumentManagementPo');
+		$docm = new Docm();
 		return $config->twig->render('items/ii/purchase-orders/display.twig', ['item' => self::getItmItem($data->itemID), 'json' => $json, 'formatter' => $formatter, 'blueprint' => $formatter->get_tableblueprint(), 'module_json' => $jsonm->jsonm, 'docm' => $docm]);
 	}
 
 /* =============================================================
-	6. Supplements
+	Hooks
 ============================================================= */
-	public static function init() {
+	private static function init() {
 		$m = self::pw('modules')->get('DpagesMii');
 
 		$m->addHook('Page(pw_template=ii-item)::documentListUrl', function($event) {

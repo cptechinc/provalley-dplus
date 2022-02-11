@@ -15,9 +15,9 @@ use Dplus\Filters\Mar\Customer      as CustomerFilter;
 use Dplus\Filters\Map\Vendor        as VendorFilter;
 use Dplus\Filters\Map\Vxm           as VxmFilter;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 
-class Lookup extends AbstractController {
+class Lookup extends Controller {
 	const FIELDS_LOOKUP = ['q|text'];
 
 	public static function test() {
@@ -118,9 +118,8 @@ class Lookup extends AbstractController {
 	public static function users($data) {
 		self::sanitizeParametersShort($data, self::FIELDS_LOOKUP);
 		self::pw('page')->headline = "Users";
-		$filter = self::pw('modules')->get('FilterDplusUsers');
-		$filter->init_query();
-		return self::moduleFilterResults($filter, $data);
+		$filter = $filter = new Filters\Msa\DplusUser();
+		return self::filterResults($filter, $data);
 	}
 
 	/**
@@ -154,6 +153,22 @@ class Lookup extends AbstractController {
 	}
 
 	/**
+	 * Search Vendor Ship-Froms
+	 * @param  object $data
+	 *                     vendorID  Vendor ID
+	 *                     q         Search Term
+	 * @return void
+	 */
+	public static function vendorShipfroms($data) {
+		self::sanitizeParametersShort($data, self::FIELDS_LOOKUP);
+		self::sanitizeParametersShort($data, ['vendorID|text']);
+		self::pw('page')->headline = "Vendor Ship-Froms";
+		$filter = new Filters\Map\VendorShipfrom();
+		$filter->init();
+		return self::filterResults($filter, $data);
+	}
+
+	/**
 	 * Search Item Groups
 	 * @param  object $data
 	 *                     q   Search Term
@@ -177,9 +192,8 @@ class Lookup extends AbstractController {
 	public static function itmItems($data) {
 		self::sanitizeParametersShort($data, self::FIELDS_LOOKUP);
 		self::pw('page')->headline = "Item Master";
-		$filter = self::pw('modules')->get('FilterItemMaster');
-		$filter->init_query();
-		return self::moduleFilterResults($filter, $data);
+		$filter = new Filters\Min\ItemMaster();
+		return self::filterResults($filter, $data);
 	}
 
 	/**
@@ -250,6 +264,120 @@ class Lookup extends AbstractController {
 		return self::filterResults($filter, $data);
 	}
 
+	/**
+	 * Search DCM (PrWorkCenter) Codes
+	 * @param  object $data
+	 *                     q   Search Term
+	 * @return void
+	 */
+	public static function dcmCodes($data) {
+		self::sanitizeParametersShort($data, self::FIELDS_LOOKUP);
+		$page = self::pw('page');
+		$filter = new Filters\Mpm\PrWorkCenter();
+		$filter->init();
+		$page->headline = "Work Center Codes";
+		if ($data->q) {
+			$filter->search($data->q);
+			$page->headline = "Searching for $data->q";
+		}
+		return self::filterResults($filter, $data);
+	}
+
+	/**
+	 * Search Sysop Codes
+	 * @param  object $data
+	 *                     q      Search Term
+	 *                     system Sysop System
+	 * @return void
+	 */
+	public static function sysopCodes($data) {
+		self::sanitizeParametersShort($data, self::FIELDS_LOOKUP);
+		self::sanitizeParametersShort($data, ['system|text']);
+		$page = self::pw('page');
+		$filter = new Filters\Msa\MsaSysopCode();
+		$filter->init();
+		$page->headline = "System Optional Codes";
+		if ($data->system) {
+			$filter->system($data->system);
+		}
+		if ($data->q) {
+			$filter->search($data->q);
+			$page->headline = "Searching for $data->q";
+		}
+		return self::filterResults($filter, $data);
+	}
+
+	/**
+	 * Search Sysop Options
+	 * @param  object $data
+	 *                     q      Search Term
+	 *                     system Sysop System
+	 *                     sysop  Sysop Optional Code
+	 * @return void
+	 */
+	public static function sysopOptions($data) {
+		self::sanitizeParametersShort($data, self::FIELDS_LOOKUP);
+		self::sanitizeParametersShort($data, ['system|text', 'sysop|text']);
+
+		$filter = new Filters\Msa\SysopOptionalCode();
+		$filter->init();
+		$page = self::pw('page');
+		$page->headline = "Optional Code ($data->sysop) Options";
+		if ($data->system) {
+			$filter->system($data->system);
+		}
+		if ($data->sysop) {
+			$filter->query->filterBySysop($data->sysop);
+		}
+		if ($data->q) {
+			$filter->search($data->q);
+			$page->headline = "Searching for $data->q";
+		}
+		return self::filterResults($filter, $data);
+	}
+
+	/**
+	 * Search Printers
+	 * @param  object $data
+	 *                     q   Search Term
+	 * @return void
+	 */
+	public static function printers($data) {
+		self::sanitizeParametersShort($data, self::FIELDS_LOOKUP);
+		self::pw('page')->headline = "Printers";;
+		$filter = new Filters\Misc\Printer();
+		$filter->init();
+		return self::filterResults($filter, $data);
+	}
+
+	/**
+	 * Search Login Groups
+	 * @param  object $data
+	 *                     q   Search Term
+	 * @return void
+	 */
+	public static function loginGroups($data) {
+		self::sanitizeParametersShort($data, self::FIELDS_LOOKUP);
+		self::pw('page')->headline = "Login Groups";;
+		$filter = new Filters\Msa\SysLoginGroup();
+		$filter->init();
+		return self::filterResults($filter, $data);
+	}
+
+	/**
+	 * Search Login Roles
+	 * @param  object $data
+	 *                     q   Search Term
+	 * @return void
+	 */
+	public static function loginRoles($data) {
+		self::sanitizeParametersShort($data, self::FIELDS_LOOKUP);
+		self::pw('page')->headline = "Login Roles";;
+		$filter = new Filters\Msa\SysLoginRole();
+		$filter->init();
+		return self::filterResults($filter, $data);
+	}
+
 	private static function moduleFilterResults(Module $filter, $data) {
 		$input = self::pw('input');
 		$page  = self::pw('page');
@@ -283,9 +411,14 @@ class Lookup extends AbstractController {
 	private static function filterResultsTwig($path = 'codes', BaseQuery $query, $q = '') {
 		$input = self::pw('input');
 		$results = $query->paginate($input->pageNum, 10);
+		$twigpath = "api/lookup/codes/search.twig";
+
+		if (self::pw('config')->twigloader->exists("api/lookup/$path/search.twig")) {
+			$twigpath = "api/lookup/$path/search.twig";
+		}
 
 		$html  = '';
-		$html .= self::pw('config')->twig->render("api/lookup/$path/search.twig", ['results' => $results, 'datamatcher' => self::pw('modules')->get('RegexData'), 'q' => $q]);
+		$html .= self::pw('config')->twig->render("$twigpath", ['results' => $results, 'datamatcher' => self::pw('modules')->get('RegexData'), 'q' => $q]);
 		$html .= '<div class="mb-3"></div>';
 		$html .= self::pw('config')->twig->render('util/paginator.twig', ['resultscount'=> $results->getNbResults() != $query->count() ? $query->count() : $results->getNbResults()]);
 		return $html;

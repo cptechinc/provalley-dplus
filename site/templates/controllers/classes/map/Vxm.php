@@ -11,9 +11,9 @@ use ProcessWire\Page, ProcessWire\XrefVxm as VxmCRUD;
 use Dplus\Filters\Map\Vendor as VendorFilter;
 use Dplus\Filters\Map\Vxm    as VxmFilter;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 
-class Vxm extends AbstractController {
+class Vxm extends Controller {
 	private static $vxm;
 
 	public static function index($data) {
@@ -74,13 +74,13 @@ class Vxm extends AbstractController {
 		$page   = self::pw('page');
 
 		if ($xref->isNew()) {
-			$page->headline = "VXM: New X-ref";
+			$page->headline = "VXM: New X-Ref";
 		}
 		if ($xref->isNew() === false) {
 			$page->headline = "VXM: " . $vxm->get_recordlocker_key($xref);
 		}
 
-		$page->js .= self::pw('config')->twig->render('items/vxm/item/form/js.twig', ['page' => $page, 'vxm' => $vxm, 'item' => $xref]);
+		$page->js .= self::pw('config')->twig->render('items/vxm/xref/form/js.twig', ['page' => $page, 'vxm' => $vxm, 'item' => $xref]);
 		$html = self::xrefDisplay($data, $xref);
 		return $html;
 	}
@@ -94,9 +94,9 @@ class Vxm extends AbstractController {
 		$html = '';
 		$html .= $config->twig->render('items/vxm/bread-crumbs.twig');
 		$html .= self::lockXref($xref);
-		$html .= $config->twig->render('items/vxm/item/form/display.twig', ['vendor' => $vendor, 'item' => $xref, 'vxm' => $vxm, 'qnotes' => $qnotes]);
+		$html .= $config->twig->render('items/vxm/xref/form/display.twig', ['vendor' => $vendor, 'item' => $xref, 'vxm' => $vxm, 'qnotes' => $qnotes]);
 
-		if (!$xref->isNew()) {
+		if ($xref->isNew() === false && $vxm->recordlocker->userHasLocked($vxm->get_recordlocker_key($xref))) {
 			$html .= self::qnotesDisplay($xref);
 		}
 		return $html;
@@ -148,7 +148,7 @@ class Vxm extends AbstractController {
 		$filter->vendorid($vxm->vendorids());
 
 		if ($data->q) {
-			$page->headline = "Searching Vendors for '$data->q'";
+			$page->headline = "VXM: Searching Vendors for '$data->q'";
 			$filter->search($data->q);
 		}
 		$filter->sortby($page);
@@ -177,10 +177,15 @@ class Vxm extends AbstractController {
 		$filter = new VxmFilter();
 		$filter->vendorid($data->vendorID);
 		$filter->sortby($page);
-		$xrefs = $filter->query->paginate(self::pw('input')->pageNum, self::pw('session')->display);
 		$page->headline = "VXM: Vendor $data->vendorID";
+		if ($data->q) {
+			$page->headline = "VXM: Searching $data->vendorID X-Refs for '$data->q'";
+			$filter->search($data->q);
+		}
+		$xrefs = $filter->query->paginate(self::pw('input')->pageNum, self::pw('session')->display);
+
 		$page->show_breadcrumbs = false;
-		$page->js .= self::pw('config')->twig->render('items/vxm/list/item/js.twig');
+		$page->js .= self::pw('config')->twig->render('items/vxm/list/xref/js.twig');
 		$html = self::vendorXrefsDisplay($data, $xrefs);
 		return $html;
 	}
@@ -189,7 +194,7 @@ class Vxm extends AbstractController {
 		$vxm    = self::vxmMaster();
 		$vendor = $vxm->get_vendor($data->vendorID);
 
-		$html = self::pw('config')->twig->render('items/vxm/list/item/vendor/display.twig', ['vxm' => $vxm, 'items' => $xrefs, 'vendor' => $vendor]);
+		$html = self::pw('config')->twig->render('items/vxm/list/xref/vendor/display.twig', ['vxm' => $vxm, 'items' => $xrefs, 'vendor' => $vendor]);
 		return $html;
 	}
 
@@ -220,7 +225,7 @@ class Vxm extends AbstractController {
 	/**
 	 * Return URL for Vxm Vendor with focus on an x-ref
 	 * @param  string $vendorID  Vendor ID
-	 * @param  string $focus     X-ref Key
+	 * @param  string $focus     X-Ref Key
 	 * @return string
 	 */
 	public static function vendorFocusUrl($vendorID, $focus = '') {
@@ -269,7 +274,7 @@ class Vxm extends AbstractController {
 	}
 
 	/**
-	 * Return X-ref List Url for Item ID
+	 * Return X-Ref List Url for Item ID
 	 * @param  string $itemID        Item ID
 	 * @return string
 	 */
@@ -280,7 +285,7 @@ class Vxm extends AbstractController {
 	}
 
 	/**
-	 * Return URL for Vxm X-ref
+	 * Return URL for Vxm X-Ref
 	 * @param  string $vendorID      Vendor ID
 	 * @param  string $vendoritemID  Vendor Item ID
 	 * @param  string $itemID        Item ID
@@ -295,7 +300,7 @@ class Vxm extends AbstractController {
 	}
 
 	/**
-	 * Return URL for Vxm X-ref Deletion
+	 * Return URL for Vxm X-Ref Deletion
 	 * @param  string $vendorID      Vendor ID
 	 * @param  string $vendoritemID  Vendor Item ID
 	 * @param  string $itemID        Item ID

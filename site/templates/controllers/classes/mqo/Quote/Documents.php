@@ -1,20 +1,31 @@
 <?php namespace Controllers\Mqo\Quote;
-
+// Propel ORM Library
+use Propel\Runtime\Util\PropelModelPager as ModelPager;
+use Propel\Runtime\Collection\ObjectCollection;
+// Dplus Docm
+use Dplus\DocManagement\Copier;
 
 class Documents extends Base {
-
+/* =============================================================
+	Indexes
+============================================================= */
 	public static function index($data) {
 		$fields = ['qnbr|text', 'document|text', 'folder|text'];
 		$data = self::sanitizeParametersShort($data, $fields);
 
 		if (empty($data->qnbr)) {
-			return self::invalidQt($data);
+			return self::lookupScreen($data);
 		}
 
 		if ($data->document && $data->folder) {
 			$docm = self::docm();
-			$docm->moveDocument($data->folder, $data->document);
-			self::pw('session')->redirect(self::pw('config')->url_webdocs.$data->document, $http301 = false);
+			$file = $docm->getDocumentByFilename($data->folder, $data->document);
+			$copier = Copier::getInstance();
+			$copier->copyFile($file->getDocumentFolder()->directory, $data->document);
+
+			if ($copier->isInDirectory($data->document)) {
+				self::pw('session')->redirect(self::pw('config')->url_webdocs.$data->document, $http301 = false);
+			}
 		}
 		return self::qt($data);
 	}
@@ -48,7 +59,20 @@ class Documents extends Base {
 		}
 		$docm      = self::docm();
 		$documents = $docm->getDocuments($data->qnbr);
-		$html      = $config->twig->render('quotes/quote/quote-documents.twig', ['documents' => $documents]);
+		return self::documentsDisplay($data, $documents);
+	}
+
+/* =============================================================
+	Displays
+============================================================= */
+	protected static function lookupScreen($data) {
+		self::pw('page')->headline = "Quote Documents";
+		return parent::lookupScreen($data);
+	}
+
+	private static function documentsDisplay($data, ObjectCollection $documents) {
+		$html  = self::breadCrumbs();
+		$html .= self::pw('config')->twig->render('quotes/quote/quote-documents.twig', ['documents' => $documents]);
 		return $html;
 	}
 }

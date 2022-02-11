@@ -1,5 +1,5 @@
 <?php namespace Controllers\Min\Itm\Xrefs;
-// Purl URI Library
+// Purl URI Manipulation Library
 use Purl\Url as Purl;
 // Propel ORM Ljbrary
 use Propel\Runtime\Util\PropelModelPager;
@@ -10,23 +10,23 @@ use ProcessWire\Page, ProcessWire\XrefCxm as CxmCRUD;
 // Dplus Filters
 use Dplus\Filters\Mso\Cxm as CxmFilter;
 // Mvc Controllers
-use Controllers\Min\Itm\Xrefs;
-use Controllers\Min\Itm\Xrefs\XrefFunction;
 use Controllers\Mso\Cxm as CxmController;
 
-class Cxm extends XrefFunction {
+class Cxm extends Base {
 	const PERMISSION_ITMP = 'xrefs';
 
+/* =============================================================
+	Indexes
+============================================================= */
 	public static function index($data) {
 		$fields = ['itemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
-		$page = self::pw('page');
+		self::sanitizeParametersShort($data, $fields);
 
 		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
+			return self::displayAlertUserPermission($data);
 		}
 
-		$page->show_breadcrumbs = false;
+		self::pw('page')->show_breadcrumbs = false;
 
 		if (empty($data->action) === false) {
 			return self::handleCRUD($data);
@@ -41,7 +41,7 @@ class Cxm extends XrefFunction {
 	public static function handleCRUD($data) {
 		$page    = self::pw('page');
 		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
+			return self::displayAlertUserPermission($data);
 		}
 		$fields = ['itemID|text', 'custID|text', 'custitemID|text', 'action|text'];
 		$data  = self::sanitizeParameters($data, $fields);
@@ -56,7 +56,6 @@ class Cxm extends XrefFunction {
 		$response = $session->getFor('response', 'cxm');
 		$url = self::xrefListUrl($data->itemID);
 
-
 		if ($cxm->xref_exists($data->custID, $data->custitemID)) {
 			$url = self::xrefUrl($data->custID, $data->custitemID, $data->itemID);
 
@@ -67,18 +66,10 @@ class Cxm extends XrefFunction {
 		$session->redirect($url, $http301 = false);
 	}
 
-	public static function xref($data) {
-		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
-		}
-		$fields = ['itemID|text', 'custID|text', 'custitemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
-		if ($data->action) {
-			return self::handleCRUD($data);
-		}
+	private static function xref($data) {
 		self::initHooks();
-		$page    = self::pw('page');
-		$cxm    = CxmController::getCxm();
+		$page  = self::pw('page');
+		$cxm   = CxmController::getCxm();
 		$xref = $cxm->get_create_xref($data->custID, $data->custitemID);
 		$page->headline = "ITM: $xref->itemid CXM $xref->custid-$xref->custitemid";
 
@@ -86,20 +77,46 @@ class Cxm extends XrefFunction {
 			$xref->setItemid($data->itemID);
 			$page->headline = "ITM: $xref->itemid CXM Create X-ref";
 		}
-		$page->js .= self::pw('config')->twig->render('items/cxm/item/form/js.twig', ['cxm' => $cxm, 'xref' => $xref]);
+		$page->js .= self::pw('config')->twig->render('items/cxm/xref/form/js.twig', ['cxm' => $cxm, 'xref' => $xref]);
 		$html = self::xrefDisplay($data, $xref);
 		self::pw('session')->removeFor('response', 'cxm');
 		return $html;
 	}
 
+	private static function list($data) {
+		$fields = ['itemID|text', 'q|text'];
+		self::sanitizeParametersShort($data, $fields);
+		self::initHooks();
+		$input   = self::pw('input');
+		$page    = self::pw('page');
+
+		$cxm  = CxmController::getCxm();
+		$cxm->recordlocker->deleteLock();
+		$filter = new CxmFilter();
+		$filter->filterInput($input);
+		$filter->sortby($page);
+		$xrefs = $filter->query->paginate($input->pageNum, 10);
+		$page->title = "CXM";
+		$page->headline = "ITM: $data->itemID CXM";
+
+		$page->js .= self::pw('config')->twig->render('items/itm/xrefs/cxm/list/js.twig');
+		$html = self::listDisplay($data, $xrefs);
+		self::pw('session')->removeFor('response', 'cxm');
+		return $html;
+	}
+
+/* =============================================================
+	Displays
+============================================================= */
 	private static function xrefDisplay($data, ItemXrefCustomer $xref) {
 		$itm     = self::getItm();
 		$item = $itm->get_item($data->itemID);
 		$cxm  = CxmController::getCxm();
 		$html = '';
 		$html .= self::cxmHeaders();
+		$html .= self::lockItem($data->itemID);
 		$html .= CxmController::lockXref($xref);
-		$html .= self::pw('config')->twig->render('items/itm/xrefs/cxm/form/display.twig', ['xref' => $xref, 'item' => $item, 'cxm' => $cxm, 'qnotes' => self::pw('modules')->get('QnotesItemCxm'), 'customer' => $cxm->get_customer($data->custID)]);
+		$html .= self::pw('config')->twig->render('items/itm/xrefs/cxm/form/display.twig', ['xref' => $xref, 'item' => $item, 'itm' => $itm, 'cxm' => $cxm, 'qnotes' => self::pw('modules')->get('QnotesItemCxm'), 'customer' => $cxm->get_customer($data->custID)]);
 
 		if (!$xref->isNew()) {
 			$html .= CxmController::qnotesDisplay($xref);
@@ -127,38 +144,14 @@ class Cxm extends XrefFunction {
 		return $html;
 	}
 
-	public static function list($data) {
-		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
-		}
-		$fields = ['itemID|text', 'q|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
-		self::initHooks();
-		$input   = self::pw('input');
-		$page    = self::pw('page');
-
-		$cxm  = CxmController::getCxm();
-		$cxm->recordlocker->deleteLock();
-		$filter = new CxmFilter();
-		$filter->filterInput($input);
-		$filter->sortby($page);
-		$xrefs = $filter->query->paginate($input->pageNum, 10);
-		$page->title = "CXM";
-		$page->headline = "ITM: $data->itemID CXM";
-
-		$page->js .= self::pw('config')->twig->render('items/itm/xrefs/cxm/list/js.twig');
-		$html = self::listDisplay($data, $xrefs);
-		self::pw('session')->removeFor('response', 'cxm');
-		return $html;
-	}
-
 	private static function listDisplay($data, PropelModelPager $xrefs) {
-		$itm     = self::getItm();
+		$itm  = self::getItm();
 		$item = $itm->get_item($data->itemID);
 
 		$html = '';
 		$html .= self::cxmHeaders();
-		$html .= self::pw('config')->twig->render('items/itm/xrefs/cxm/list/display.twig', ['item' => $item, 'cxm' => CxmController::getCxm(), 'items' => $xrefs]);
+		$html .= self::lockItem($data->itemID);
+		$html .= self::pw('config')->twig->render('items/itm/xrefs/cxm/list/display.twig', ['item' => $item, 'itm' => $itm, 'cxm' => CxmController::getCxm(), 'items' => $xrefs]);
 		return $html;
 	}
 
@@ -238,5 +231,4 @@ class Cxm extends XrefFunction {
 			$event->return = Xrefs::xrefUrlCxm($xref->itemid);
 		});
 	}
-
 }

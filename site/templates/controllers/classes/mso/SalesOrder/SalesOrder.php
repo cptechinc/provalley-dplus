@@ -13,33 +13,34 @@ use ConfigSalesOrderQuery, ConfigSalesOrder as ConfigSo;
 use ProcessWire\Page, ProcessWire\Module;
 // Alias Document Finders
 use Dplus\DocManagement\Finders as DocFinders;
-// Dplus Classes
+// Dplus Code Validators
 use Dplus\CodeValidators\Mso as MsoValidator;
+// Dplus Mso
+use Dplus\Mso\So\Tools;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
-use Controllers\Mii\Ii;
+use Controllers\Mii\Ii\Ii;
+use Controllers\Mci\Ci\Ci;
 
 class SalesOrder extends Base {
-	static $validate;
-	static $docm;
-	static $configSo;
-
 /* =============================================================
 	Indexes
 ============================================================= */
 	public static function index($data) {
 		$fields = ['ordn|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		self::sanitizeParametersShort($data, $fields);
+
+		if (empty($data->action) === false) {
+			return self::handleCRUD($data);
+		}
 
 		if (empty($data->ordn) === false) {
 			return self::so($data);
 		}
+		return self::lookupScreen($data);
 	}
 
 	public static function so($data) {
-		$data = self::sanitizeParametersShort($data, ['ordn|ordn', 'print|bool']);
-		$page = self::pw('page');
-		$config   = self::pw('config');
+		self::sanitizeParametersShort($data, ['ordn|ordn', 'print|bool']);
 		$validate = self::validator();
 
 		if ($validate->order($data->ordn) === false && $validate->invoice($data->ordn) === false) {
@@ -52,115 +53,99 @@ class SalesOrder extends Base {
 		if ($data->print) {
 			self::pw('session')->redirect(self::orderPrintUrl($data->ordn), $http301 = false);
 		}
-		$page->headline = "Sales Order #$data->ordn";
-
-		self::pw('modules')->get('DpagesMso')->init_salesorder_hooks();
+		self::pw('page')->headline = "Sales Order #$data->ordn";
 		self::pw('modules')->get('SalesOrderEdit')->init();
 
 		if ($validate->invoice($data->ordn)) {
-			return self::saleshistory($data);
+			return Invoice::invoice($data);
 		}
 
 		return self::salesorder($data);
 	}
 
+	public static function handleCRUD($data) {
+		self::sanitizeParametersShort($data, ['ordn|ordn', 'action|text']);
+		switch ($data->action) {
+			case 'print-invoice':
+				self::requestPrintInvoice($data);
+				break;
+		}
+		self::pw('session')->redirect(self::orderUrl($data->ordn));
+	}
+
 /* =============================================================
 	Displays
 ============================================================= */
-	public static function saleshistory($data) {
-		$data = self::sanitizeParametersShort($data, ['ordn|ordn']);
-		$validate = self::validator();
-
-		if ($validate->invoice($data->ordn) === false) {
-			return self::invalidSo($data);
-		}
-		$page   = self::pw('page');
-		$config = self::pw('config');
-		$order = SalesHistoryQuery::create()->findOneByOrdernumber($data->ordn);
-		$page->listpage = self::pw('pages')->get('pw_template=sales-history-orders');
-		$docm = self::docm();
-		$twig = [
-			'header' => $config->twig->render("sales-orders/sales-history/header-display.twig", ['config' => self::configSo(), 'order' => $order, 'docm' => $docm])
-		];
-		$twigloader = $config->twig->getLoader();
-
-		if ($twigloader->exists("sales-orders/sales-history/$config->company/items.twig")) {
-			$twig['items'] = $config->twig->render("sales-orders/sales-history/$config->company/items.twig", ['config' => self::configSo(), 'order' => $order]);
-		} else {
-			$twig['items'] = $config->twig->render("sales-orders/sales-history/items.twig", ['config' => self::configSo(), 'order' => $order]);
-		}
-
-		$qnotes = self::pw('modules')->get('QnotesSalesHistory');
-		$twig = self::_orderDetails($order, $data, $qnotes, $twig);
-		$html = $config->twig->render("sales-orders/sales-history/page.twig", ['html' => $twig, 'order' => $order]);
-		return $html;
-	}
-
 	public static function salesorder($data) {
-		$data = self::sanitizeParametersShort($data, ['ordn|ordn']);
-		$validate = self::validator();
+		self::sanitizeParametersShort($data, ['ordn|ordn']);
 
-		if ($validate->order($data->ordn) === false) {
+		if (self::validator()->order($data->ordn) === false) {
 			return self::invalidSo($data);
 		}
 		$config = self::pw('config');
 		$order = SalesOrderQuery::create()->findOneByOrdernumber($data->ordn);
-		self::pw('page')->listpage = self::pw('pages')->get('pw_template=sales-orders');
 		$twig = [
-			'header' => $config->twig->render("sales-orders/sales-order/header-display.twig", ['config' => self::configSo(), 'order' => $order])
+			'header' => $config->twig->render("sales-orders/sales-order/header-display.twig", ['config' => self::configSo(), 'order' => $order]),
+			'items'  => self::itemsDisplay($order, $data)
 		];
-		$twigloader = $config->twig->getLoader();
-
-		if ($twigloader->exists("sales-orders/sales-order/$config->company/items.twig")) {
-			$twig['items'] = $config->twig->render("sales-orders/sales-order/$config->company/items.twig", ['config' => self::configSo(), 'order' => $order]);
-		} else {
-			$twig['items'] = $config->twig->render("sales-orders/sales-order/items.twig", ['config' => self::configSo(), 'order' => $order]);
-		}
-
-		$qnotes = self::pw('modules')->get('QnotesSalesOrder');
-		$twig = self::_orderDetails($order, $data, $qnotes, $twig);
+		$twig = self::_orderDetails($order, $data, $twig);
 		$html = $config->twig->render("sales-orders/sales-order/page.twig", ['html' => $twig, 'order' => $order]);
 		return $html;
 	}
 
 	/**
 	 * Render Twig Elements fo Sales Order
-	 * @param  ActiveRecordInterface|SalesOrder|SalesHistory $order  [description]
+	 * @param  ActiveRecordInterface|SalesOrder $order  Order
 	 * @param  stdClass              $data
-	 * @param  Module                $qnotes
 	 * @param  array                 $twig   Twig array to append to
 	 * @return array
 	 */
-	private static function _orderDetails(ActiveRecordInterface $order, $data, Module $qnotes, array $twig) {
-		$data = self::sanitizeParametersShort($data, ['ordn|ordn']);
-		$validate = self::validator();
-
-		if ($validate->order($data->ordn) === false && $validate->invoice($data->ordn) === false) {
-			return self::invalidSo($data);
-		}
-		$modules = self::pw('modules');
+	protected static function _orderDetails(ActiveRecordInterface $order, $data, array $twig) {
+		self::sanitizeParametersShort($data, ['ordn|ordn']);
 		$config  = self::pw('config');
 		$page    = self::pw('page');
-		$docm    = self::docm();
-		$documents = $docm->getDocuments($data->ordn);
 
-		$module_useractions = $modules->get('FilterUserActions');
-		$query_useractions = $module_useractions->get_actionsquery(self::pw('input'));
-		$actions = $query_useractions->filterBySalesorderlink($data->ordn)->find();
-
-		$twig['tracking']    = $config->twig->render('sales-orders/sales-order/sales-order-tracking.twig', ['order' => $order, 'urlmaker' => $modules->get('DplusURLs')]);
-		$twig['documents']   = $config->twig->render('sales-orders/sales-order/documents.twig', ['documents' => $documents, 'docm' => $docm, 'ordn' => $data->ordn]);
-		$twig['qnotes']      = $config->twig->render('sales-orders/sales-order/qnotes.twig', ['qnotes_so' => $qnotes, 'ordn' => $data->ordn]);
-		$twig['useractions'] = $config->twig->render('sales-orders/sales-order/user-actions.twig', ['module_useractions' => $module_useractions, 'actions' => $actions, 'ordn' => $data->ordn]);
+		$twig['tracking']    = $config->twig->render('sales-orders/sales-order/sales-order-tracking.twig', ['order' => $order, 'urlmaker' => self::pw('modules')->get('DplusURLs')]);
+		$twig['documents']   = self::documentsDisplay($data);
+		$twig['qnotes']      = static::qnotesDisplay($data);
+		$twig['useractions'] = self::userActionsDisplay($data);
 		$twig['modals']      = $config->twig->render('sales-orders/sales-order/specialorder-modal.twig', ['ordn' => $data->ordn]);
-		$page->js   .= $config->twig->render('sales-orders/sales-order/specialorder-modal.js.twig', ['ordn' => $data->ordn]);
+		$page->js .= $config->twig->render('sales-orders/sales-order/specialorder-modal.js.twig', ['ordn' => $data->ordn]);
 		return $twig;
+	}
+
+	protected static function itemsDisplay(ActiveRecordInterface $order, $data) {
+		$config     = self::pw('config');
+		$twigloader = $config->twig->getLoader();
+
+		if ($twigloader->exists("sales-orders/sales-order/$config->company/items.twig")) {
+			return $config->twig->render("sales-orders/sales-order/$config->company/items.twig", ['config' => self::configSo(), 'order' => $order, 'soTools' => Tools::getInstance()]);
+		}
+		return $config->twig->render("sales-orders/sales-order/items.twig", ['config' => self::configSo(), 'order' => $order, 'soTools' => Tools::getInstance()]);
+	}
+
+	protected static function documentsDisplay($data) {
+		$docm      = self::docm();
+		$documents = $docm->getDocuments($data->ordn);
+		return self::pw('config')->twig->render('sales-orders/sales-order/documents.twig', ['documents' => $documents, 'docm' => $docm, 'ordn' => $data->ordn]);
+	}
+
+	protected static function userActionsDisplay($data) {
+		$m       = self::pw('modules')->get('FilterUserActions');
+		$query   = $m->get_actionsquery(self::pw('input'));
+		$actions = $query->filterBySalesorderlink($data->ordn)->find();
+		return self::pw('config')->twig->render('sales-orders/sales-order/user-actions.twig', ['module_useractions' => $m, 'actions' => $actions, 'ordn' => $data->ordn]);
+	}
+
+	protected static function qnotesDisplay($data) {
+		$qnotes = self::pw('modules')->get('QnotesSalesOrder');
+		return self::pw('config')->twig->render('sales-orders/sales-order/qnotes.twig', ['qnotes_so' => $qnotes, 'ordn' => $data->ordn]);
 	}
 
 /* =============================================================
 	Supplemental
 ============================================================= */
-	public static function initHooks() { // TODO HOOKS for CI
+	public static function initHooks() {
 		$m = self::pw('modules')->get('DpagesMso');
 
 		$m->addHook('Page(pw_template=sales-order-view|sales-order-edit)::orderUrl', function($event) {
@@ -169,6 +154,10 @@ class SalesOrder extends Base {
 
 		$m->addHook('Page(pw_template=sales-order-view)::orderListUrl', function($event) {
 			$event->return = self::orderListUrl($event->arguments(0));
+		});
+
+		$m->addHook('Page(pw_template=sales-order-view)::orderHistoryListUrl', function($event) {
+			$event->return = self::orderHistoryListUrl($event->arguments(0));
 		});
 
 		$m->addHook('Page(pw_template=sales-order-view|sales-order-edit)::orderPrintUrl', function($event) {
@@ -187,8 +176,42 @@ class SalesOrder extends Base {
 			$event->return = self::orderNotesUrl($event->arguments(0), $event->arguments(1));
 		});
 
+		$m->addHook('Page(pw_template=sales-order-view|sales-order-edit)::orderDocumentsUrl', function($event) {
+			$event->return = self::orderDocumentsUrl($event->arguments(0));
+		});
+
+		$m->addHook('Page(pw_template=sales-order-view|sales-order-edit)::documentUrl', function($event) {
+			$event->return = self::documentUrl($event->arguments(0), $event->arguments(1), $event->arguments(2));
+		});
+
 		$m->addHook('Page(pw_template=sales-order-view|sales-order-edit)::iiUrl', function($event) {
 			$event->return = Ii::iiUrl($event->arguments(0));
 		});
+
+		$m->addHook('Page(pw_template=sales-order-view)::printInvoiceUrl', function($event) {
+			$event->return = self::orderPrintInvoiceUrl($event->arguments(0));
+		});
+
+		$m->addHook('Page(pw_template=sales-order-view|sales-order-edit)::ciUrl', function($event) {
+			$event->return = Ci::ciUrl($event->arguments(0));
+		});
+
+		$m->addHook('Page(pw_template=sales-order-view|sales-order-edit)::ciShiptoUrl', function($event) {
+			$event->return = Ci::ciShiptoUrl($event->arguments(0), $event->arguments(1));
+		});
+	}
+
+	protected static function requestPrintInvoice($data) {
+		$vars = ['PRINTARINVOICE', "ORDN=$data->ordn"];
+		self::sendRequest($vars);
+	}
+
+	protected static function sendRequest(array $data, $sessionID = '') {
+		$sessionID = $sessionID ? $sessionID : session_id();
+		$db = self::pw('modules')->get('DplusOnlineDatabase')->db_name;
+		$data = array_merge(["DBNAME=$db"], $data);
+		$requestor = self::pw('modules')->get('DplusRequest');
+		$requestor->write_dplusfile($data, $sessionID);
+		$requestor->cgi_request(self::pw('config')->cgis['default'], $sessionID);
 	}
 }

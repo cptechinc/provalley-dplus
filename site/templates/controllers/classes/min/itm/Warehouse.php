@@ -5,26 +5,26 @@ use Purl\Url as Purl;
 use WarehouseInventoryQuery, WarehouseInventory;
 // ProcessWire classes, modules
 use ProcessWire\Page, ProcessWire\ItmWarehouse as WarehouseCRUD;
-// Mvc Controllers
-use Controllers\Min\Itm\ItmFunction;
 
-class Warehouse extends ItmFunction {
+class Warehouse extends Base {
 	const PERMISSION_ITMP = 'whse';
 
+/* =============================================================
+	Indexes
+============================================================= */
 	public static function index($data) {
 		$fields = ['itemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
-		$page = self::pw('page');
+		self::sanitizeParametersShort($data, $fields);
 
 		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
+			return self::displayAlertUserPermission($data);
 		}
 
 		if (empty($data->action) === false) {
 			return self::handleCRUD($data);
 		}
 
-		$page->show_breadcrumbs = false;
+		self::pw('page')->show_breadcrumbs = false;
 
 		if (empty($data->whseID) === false) {
 			return self::warehouse($data);
@@ -33,9 +33,8 @@ class Warehouse extends ItmFunction {
 	}
 
 	public static function handleCRUD($data) {
-		$page = self::pw('page');
 		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
+			return self::displayAlertUserPermission($data);
 		}
 
 		$fields = ['itemID|text', 'whseID|text', 'action|text'];
@@ -58,18 +57,17 @@ class Warehouse extends ItmFunction {
 		self::pw('session')->redirect($url, $http301 = false);
 	}
 
-	public static function warehouse($data) {
+	private static function warehouse($data) {
 		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
+			return self::displayAlertUserPermission($data);
 		}
 
 		$fields = ['itemID|text', 'whseID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		self::sanitizeParametersShort($data, $fields);
 		if ($data->action) {
 			return self::handleCRUD($data);
 		}
 		self::initHooks();
-		$config  = self::pw('config');
 		$page    = self::pw('page');
 		$page->headline = "ITM: $data->itemID Warehouse $data->whseID";
 		$validate = self::getMinValidator();
@@ -78,12 +76,35 @@ class Warehouse extends ItmFunction {
 			return self::invalidWhse($data);
 		}
 
-		if (self::getItmWarehouse()->exists($data->itemID, $data->whseID)) {
+		if (self::getItmWarehouse()->exists($data->itemID, $data->whseID) === false) {
 			$page->headline = "ITM: $data->itemID Warehouse Add";
 		}
+		$page->js .= self::pw('config')->twig->render('items/itm/warehouse/js.twig');
 		return self::whseDisplay($data);
 	}
 
+	public static function list($data) {
+		if (self::validateItemidAndPermission($data) === false) {
+			return $page->body;
+		}
+
+		$fields = ['itemID|text', 'action|text'];
+		self::sanitizeParametersShort($data, $fields);
+		if ($data->action) {
+			return self::handleCRUD($data);
+		}
+		self::initHooks();
+		$itmw    = self::getItmWarehouse();
+		$itmw->recordlocker->deleteLock();
+		$page    = self::pw('page');
+		$page->headline = "ITM: $data->itemID Warehouses";
+
+		return self::listDisplay($data);
+	}
+
+/* =============================================================
+	Displays
+============================================================= */
 	private static function whseDisplay($data) {
 		$itm  = self::getItm();
 		$itmW = self::getItmWarehouse();
@@ -106,7 +127,19 @@ class Warehouse extends ItmFunction {
 		}
 
 		$html .= $config->twig->render('items/itm/warehouse/display.twig', ['item' => $item, 'warehouse' => $whse, 'm_whse' => $itmW, 'recordlocker' => $itmW->recordlocker]);
+		if ($whse->isNew() === false) {
+			$html .= self::displayQnotes($data, $whse);
+		}
 		$html .= $config->twig->render('items/itm/warehouse/bins-modal.twig', ['itemID' => $data->itemID, 'm_whse' => $itmW]);
+		return $html;
+	}
+
+	private static function displayQnotes($data, $item) {
+		$qnotes = self::getQnotes();
+		$html = '';
+		self::pw('page')->js .= self::pw('config')->twig->render('items/itm/warehouse/notes/order/js.twig', ['item' => $item, 'qnotes' => $qnotes]);
+		$html .= self::pw('config')->twig->render('items/itm/warehouse/notes/notes.twig', ['item' => $item, 'qnotes' => $qnotes]);
+		self::pw('session')->remove('response_qnote');
 		return $html;
 	}
 
@@ -135,41 +168,25 @@ class Warehouse extends ItmFunction {
 		return $html;
 	}
 
-	public static function list($data) {
-		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
-		}
-
-		$fields = ['itemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
-		if ($data->action) {
-			return self::handleCRUD($data);
-		}
-		self::initHooks();
-		$itmw    = self::getItmWarehouse();
-		$itmw->recordlocker->deleteLock();
-		$page    = self::pw('page');
-		$page->headline = "ITM: $data->itemID Warehouses";
-
-		return self::listDisplay($data);
-	}
-
 	private static function listDisplay($data) {
 		$config  = self::pw('config');
 		$item    = self::getItm()->item($data->itemID);
 		$itmw    = self::getItmWarehouse();
+		$qnotes  = self::getQnotes();
 
 		$html = '';
 		$html .= $config->twig->render('items/itm/bread-crumbs.twig');
 		$html .= $config->twig->render('items/itm/itm-links.twig');
-		$html .= $config->twig->render('items/itm/warehouse/list-display.twig', ['itmw' => $itmw, 'itemID' => $data->itemID, 'item' => $item, 'warehouses' => $itmw->get_itemwarehouses($data->itemID)]);
+		if (self::pw('session')->getFor('response', 'itm')) {
+			$html .= $config->twig->render('items/itm/response-alert.twig', ['response' => self::pw('session')->getFor('response', 'itm')]);
+		}
+		$html .= $config->twig->render('items/itm/warehouse/list-display.twig', ['itmw' => $itmw, 'itemID' => $data->itemID, 'item' => $item, 'warehouses' => $itmw->get_itemwarehouses($data->itemID), 'qnotes' => $qnotes]);
 		return $html;
 	}
 
-	public static function getItmWarehouse() {
-		return self::pw('modules')->get('ItmWarehouse');
-	}
-
+/* =============================================================
+	URLs
+============================================================= */
 	public static function itmUrlWhseDelete($itemID, $whseID) {
 		$url = new Purl(self::itmUrlWhse($itemID, $whseID));
 		$url->query->set('action', 'delete-whse');
@@ -182,6 +199,9 @@ class Warehouse extends ItmFunction {
 		return $url->getUrl();
 	}
 
+/* =============================================================
+	Hooks
+============================================================= */
 	public static function initHooks() {
 		$m = self::pw('modules')->get('Itm');
 
@@ -194,4 +214,14 @@ class Warehouse extends ItmFunction {
 		});
 	}
 
+/* =============================================================
+	Supplemental
+============================================================= */
+	public static function getItmWarehouse() {
+		return self::pw('modules')->get('ItmWarehouse');
+	}
+
+	public static function getQnotes() {
+		return self::pw('modules')->get('QnotesItemWhseOrder');
+	}
 }

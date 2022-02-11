@@ -1,19 +1,15 @@
 <?php namespace Controllers\Mii\Ii;
-// Purl\Url
+// Purl URI Manipulation Library
 use Purl\Url as Purl;
-// Dplus Validators
-use Dplus\CodeValidators\Min as MinValidator;
-// Mvc Controllers
-use Controllers\Mii\IiFunction;
 
-class Activity extends IiFunction {
+class Activity extends Base {
 	const JSONCODE          = 'ii-activity';
 	const PERMISSION_IIO    = 'activity';
 	const DATE_FORMAT       = 'm/d/Y';
 	const DATE_FORMAT_DPLUS = 'Ymd';
 
 /* =============================================================
-	1. Indexes
+	Indexes
 ============================================================= */
 	public static function index($data) {
 		$fields = ['itemID|text', 'refresh|bool', 'date|date'];
@@ -34,35 +30,41 @@ class Activity extends IiFunction {
 		if (empty($data->date) === false) {
 			return self::activity($data);
 		}
-		return self::dateForm($data);
+		return self::initScreen($data);
 	}
 
-	public static function activity($data) {
-		if (self::validateItemidPermission($data) === false) {
-			return self::alertInvalidItemPermissions($data);
-		}
-		self::sanitizeParametersShort($data, ['itemID|text']);
-
+	private static function activity($data) {
 		self::getData($data);
-		$page    = self::pw('page');
-		$page->headline = "II: $data->itemID Activity";
-		$html = '';
-		$html .= self::breadCrumbs();
-		$html .= self::display($data);
-		return $html;
+		self::pw('page')->headline = "II: $data->itemID Activity";
+		return self::displayActivity($data);
+	}
+
+	private static function initScreen($data) {
+		$iio    = self::getIio();
+		$options = $iio->useriio(self::pw('user')->loginid);
+		$data->startdate = date(self::DATE_FORMAT);
+
+		if ($options->daysactivity > 0) {
+			$data->startdate = date(self::DATE_FORMAT, strtotime("-$options->daysactivity days"));
+		}
+
+		if (intval($options->dateactivity) > 0) {
+			$data->startdate = date(self::DATE_FORMAT, strtotime($options->dateactivity));
+		}
+
+		self::pw('page')->headline = "II: $data->itemID Activity";
+		self::pw('config')->scripts->append(self::getFileHasher()->getHashUrl('scripts/lib/jquery-validate.js'));
+		return self::displayInitScreen($data);
 	}
 
 /* =============================================================
-	2. Data Requests
+	Data Requests
 ============================================================= */
-	public static function requestJson($vars) {
-		$fields = ['itemID|text', 'date|date', 'sessionID|text', 'lotserial|text'];
+	private static function requestJson($vars) {
+		$fields = ['itemID|text', 'date|date', 'sessionID|text'];
 		self::sanitizeParametersShort($vars, $fields);
 		$vars->sessionID = empty($vars->sessionID) === false ? $vars->sessionID : session_id();
 		$data = ['IIACTIVITY', "ITEMID=$vars->itemID"];
-		if ($vars->lotnbr) {
-			$data[] = "LOTSERIAL=$vars->lotserial";
-		}
 		if ($vars->date) {
 			$dateYmd = date(self::DATE_FORMAT_DPLUS, $vars->date);
 			$data[] = "DATE=$dateYmd";
@@ -71,7 +73,7 @@ class Activity extends IiFunction {
 	}
 
 /* =============================================================
-	3. URLs
+	URLs
 ============================================================= */
 	public static function activityUrl($itemID, $date = '', $refreshdata = false) {
 		$url = new Purl(self::pw('pages')->get('pw_template=ii-item')->url);
@@ -89,7 +91,7 @@ class Activity extends IiFunction {
 	}
 
 /* =============================================================
-	4. Data Retrieval
+	Data Retrieval
 ============================================================= */
 	private static function getData($data) {
 		self::sanitizeParametersShort($data, ['itemID|text', 'date|date']);
@@ -104,7 +106,7 @@ class Activity extends IiFunction {
 		if ($jsonm->exists(self::JSONCODE)) {
 			if (self::jsonItemidMatches($json['itemid'], $data->itemID) === false || $json['date'] != date(self::DATE_FORMAT_DPLUS, $data->timestamp)) {
 				$jsonm->delete(self::JSONCODE);
-				$session->redirect(self::lotActivityUrl($data->itemID, $data->date, $refresh = true), $http301 = false);
+				$session->redirect(self::activityUrl($data->itemID, $data->date, $refresh = true), $http301 = false);
 			}
 			$session->setFor('ii', 'activity', 0);
 			return true;
@@ -118,9 +120,16 @@ class Activity extends IiFunction {
 	}
 
 /* =============================================================
-	5. Displays
+	Displays
 ============================================================= */
-	protected static function display($data) {
+	private static function displayActivity($data) {
+		$html = '';
+		$html .= self::breadCrumbs();
+		$html .= self::displayData($data);
+		return $html;
+	}
+
+	private static function displayData($data) {
 		self::init();
 		self::sanitizeParametersShort($data, ['itemID|text', 'date|text']);
 		$jsonm  = self::getJsonModule();
@@ -141,34 +150,18 @@ class Activity extends IiFunction {
 		return $config->twig->render('items/ii/activity/display.twig', ['item' => self::getItmItem($data->itemID), 'json' => $json, 'module_json' => $jsonm->jsonm, 'docm' => $docm, 'date' => $data->date]);
 	}
 
-	public static function dateForm($data) {
-		self::sanitizeParametersShort($data, ['itemID|text']);
-		$config = self::pw('config');
-		$page   = self::pw('page');
-		$iio    = self::getIio();
-
-		$options = $iio->useriio(self::pw('user')->loginid);
-		$startdate = date(self::DATE_FORMAT);
-
-		if ($options->daysactivity > 0) {
-			$startdate = date(self::DATE_FORMAT, strtotime("-$options->daysactivity days"));
-		}
-
-		if (intval($options->dateactivity) > 0) {
-			$startdate = date(self::DATE_FORMAT, strtotime($options->dateactivity));
-		}
-
-		$page->headline = "II: $data->itemID Activity";
+	private static function displayInitScreen($data) {
 		$html = self::breadCrumbs();
 		$html .= '<h3> Enter Starting Activity Date</h3>';
-		$html .= $config->twig->render('items/ii/activity/date-form.twig', ['itemID' => $data->itemID, 'startdate' => $startdate]);
-		$config->scripts->append(self::getFileHasher()->getHashUrl('scripts/lib/jquery-validate.js'));
+		$html .= self::pw('config')->twig->render('items/ii/activity/date-form.twig', ['itemID' => $data->itemID, 'startdate' => $data->startdate]);
 		return $html;
 	}
 
-	public static function init() {
+/* =============================================================
+	Hooks
+============================================================= */
+	private static function init() {
 		$m = self::pw('modules')->get('DpagesMii');
-
 		$m->addHook('Page(pw_template=ii-item)::documentListUrl', function($event) {
 			$page      = $event->object;
 			$itemID    = $event->arguments(0);

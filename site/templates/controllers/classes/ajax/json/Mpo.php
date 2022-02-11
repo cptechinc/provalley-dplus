@@ -4,20 +4,21 @@ use PurchaseOrderQuery, PurchaseOrder;
 use PurchaseOrderDetailQuery, PurchaseOrderDetail;
 // ProcessWire Classes, Modules
 use ProcessWire\Module, ProcessWire\ProcessWire;
+// Dplus Codes
+use Dplus\Codes\Mpo\Cnfm;
 // Dplus Validators
 use Dplus\CodeValidators\Mpo as MpoValidator;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 
-class Mpo extends AbstractController {
+class Mpo extends Controller {
 	public static function test() {
 		return 'test';
 	}
 
 	public static function validatePonbr($data) {
 		$fields = ['ponbr|ponbr'];
-		$data = self::sanitizeParametersShort($data, $fields);
-		return $data->ponbr;
+		self::sanitizeParametersShort($data, $fields);
 		$validate = new MpoValidator();
 
 		if ($validate->po($data->ponbr) === false) {
@@ -28,7 +29,7 @@ class Mpo extends AbstractController {
 
 	public static function getPoItem($data) {
 		$fields = ['ponbr|text', 'linenbr|int'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		self::sanitizeParametersShort($data, $fields);
 		$data->ponbr = PurchaseOrder::get_paddedponumber($data->ponbr);
 		$q = PurchaseOrderDetailQuery::create()->filterByPonbr($data->ponbr)->filterByLinenbr($data->linenbr);
 
@@ -63,6 +64,39 @@ class Mpo extends AbstractController {
 				'description' => $line->glcode ? $line->glcode->description : ''
 			],
 			'ordn' => $line->ordn,
+		];
+		return $response;
+	}
+
+	public static function validateCnfmCode($data) {
+		$fields = ['code|text', 'jqv|bool', 'new|bool'];
+		self::sanitizeParametersShort($data, $fields);
+		$validate = new MpoValidator();
+		$exists = $validate->cnfm($data->code);
+
+		if (boolval($data->jqv) === false) {
+			if (boolval($data->new)) {
+				return $exists === false;
+			}
+			return $exists;
+		}
+
+		if (boolval($data->new) === true) {
+			return $exists === true ? "Code $data->code already exists" : true;
+		}
+		return $exists === false ? "Code $data->code not found" : true;
+	}
+
+	public static function getCnfmCode($data) {
+		self::sanitizeParametersShort($data, ['code|text']);
+		$cnfm = Cnfm::getInstance();
+		if ($cnfm->exists($data->code) === false) {
+			return false;
+		}
+		$code = $cnfm->code($data->code);
+		$response = [
+			'code'        => $code->code,
+			'description' => $code->description
 		];
 		return $response;
 	}

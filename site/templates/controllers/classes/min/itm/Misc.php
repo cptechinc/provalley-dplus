@@ -3,23 +3,24 @@
 use ItemMasterItemQuery, ItemMasterItem;
 // ProcessWire Classes, Modules
 use ProcessWire\Page, ProcessWire\ItmMisc as MiscCRUD;
-// Mvc Controllers
-use Controllers\Min\Itm\ItmFunction;
 
-class Misc extends ItmFunction {
+class Misc extends Base {
 	const PERMISSION_ITMP = 'misc';
 
 	private static $misc;
 
+/* =============================================================
+	Indexes
+============================================================= */
 	public static function index($data) {
 		$fields = ['itemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		self::sanitizeParametersShort($data, $fields);
 
 		if (self::validateItemidAndPermission($data) === false) {
-			return self::pw('page')->body;
+			return self::displayAlertUserPermission($data);
 		}
 
-		self::getItmMisc()->init_configs();
+		self::getItmMisc();
 
 		if (empty($data->action) === false) {
 			return self::handleCRUD($data);
@@ -34,29 +35,29 @@ class Misc extends ItmFunction {
 
 	public static function handleCRUD($data) {
 		if (self::validateItemidAndPermission($data) === false) {
-			return self::pw('page')->body;
+			return self::displayAlertUserPermission($data);;
 		}
-
 		$fields   = ['itemID|text', 'action|text'];
-		$data    = self::sanitizeParameters($data, $fields);
+		self::sanitizeParameters($data, $fields);
 		$input   = self::pw('input');
-		$itmMiscisc = self::getItmMisc();
-		$itmMiscisc->init_configs();
+		$itmMisc = self::getItmMisc();
 
 		if ($data->action) {
-			$itmMiscisc->process_input($input);
+			$itmMisc->processInput($input);
 		}
 
-		self::pw('session')->redirect(self::itmUrlMisc($data->itemID), $http301 = false);
+		if (self::pw('config')->ajax === false) {
+			self::pw('session')->redirect(self::itmUrlMisc($data->itemID), $http301 = false);
+		}
 	}
 
-	public static function misc($data) {
+	private static function misc($data) {
 		if (self::validateItemidAndPermission($data) === false) {
-			return self::pw('page')->body;
+			return self::displayAlertUserPermission($data);
 		}
 
 		$fields = ['itemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		self::sanitizeParametersShort($data, $fields);
 		if ($data->action) {
 			return self::handleCRUD($data);
 		}
@@ -67,6 +68,9 @@ class Misc extends ItmFunction {
 		return self::miscDisplay($data);
 	}
 
+/* =============================================================
+	Displays
+============================================================= */
 	private static function miscDisplay($data) {
 		$config  = self::pw('config');
 		$session = self::pw('session');
@@ -78,12 +82,19 @@ class Misc extends ItmFunction {
 		if ($session->getFor('response', 'itm')) {
 			$html .= $config->twig->render('items/itm/response-alert.twig', ['response' => $session->getFor('response', 'itm')]);
 		}
+		if ($session->getFor('response', 'itm-hazmat')) {
+			// $html .= $config->twig->render('items/itm/response-alert.twig', ['response' => $session->getFor('response', 'itm-hazmat')]);
+			$session->removeFor('response', 'itm-hazmat');
+		}
 		$html .= self::lockItem($data->itemID);
 		$html .= $config->twig->render('items/itm/itm-links.twig');
 		$html .= $config->twig->render('items/itm/misc/page.twig', ['itm' => self::getItmMisc(), 'item' => $item, 'recordlocker' => $itm->recordlocker]);
 		return $html;
 	}
 
+/* =============================================================
+	Supplemental
+============================================================= */
 	public static function getItmMisc() {
 		if (empty(self::$misc)) {
 			self::$misc = self::pw('modules')->get('ItmMisc');

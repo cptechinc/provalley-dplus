@@ -4,24 +4,25 @@ use Purl\Url as Purl;
 // Propel ORM Ljbrary
 use Propel\Runtime\Util\PropelModelPager;
 // Dplus Model
+use CustomerQuery;
 use ItemXrefCustomer;
 // ProcessWire Classes, Modules
 use ProcessWire\Page, ProcessWire\XrefCxm as CxmCRUD;
 // Dplus Filters
+use Dplus\Filters;
 use Dplus\Filters\Mso\Cxm as CxmFilter;
 use Dplus\Filters\Mar\Customer as CustomerFilter;
 
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 
-class Cxm extends AbstractController {
+class Cxm extends Controller {
 	private static $cxm;
 
 	public static function index($data) {
 		$fields = ['custID|text', 'custitemID|text', 'q|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
-		$page = self::pw('page');
-		$page->show_breadcrumbs = false;
+		self::sanitizeParametersShort($data, $fields);
+		self::pw('page')->show_breadcrumbs = false;
 
 		if (empty($data->action) === false) {
 			return self::handleCRUD($data);
@@ -38,15 +39,13 @@ class Cxm extends AbstractController {
 
 	public static function handleCRUD($data) {
 		$fields = ['action|text', 'custID|text', 'custitemID|text'];
-		$data = self::sanitizeParameters($data, $fields);
-		$input   = self::pw('input');
+		self::sanitizeParametersShort($data, $fields);
 
 		if ($data->action) {
 			$cxm = self::getCxm();
-			$cxm->process_input($input);
+			$cxm->process_input(self::pw('input'));
 		}
 		$session = self::pw('session');
-		$page    = self::pw('page');
 
 		$response = $session->getFor('response', 'cxm');
 		$url      = self::custUrl($data->custID);
@@ -55,7 +54,7 @@ class Cxm extends AbstractController {
 			$url = self::xrefUrl($data->custID, $data->custitemID);
 
 			if ($response  && $response ->has_success()) {
-				$url = self::custFocusUrl($data->custID, $response->key);
+				$url = self::xrefListUrl($data->custID, $response->key);
 			}
 		}
 		$session->redirect($url, $http301 = false);
@@ -63,7 +62,7 @@ class Cxm extends AbstractController {
 
 	public static function xref($data) {
 		$fields = ['custID|text', 'custitemID|text', 'itemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
+		self::sanitizeParametersShort($data, $fields);
 		if ($data->action) {
 			return self::handleCRUD($data);
 		}
@@ -73,27 +72,29 @@ class Cxm extends AbstractController {
 		$xref    = $cxm->get_create_xref($data->custID, $data->custitemID, $data->itemID);
 
 		if ($xref->isNew()) {
-			$page->headline = "CXM: New X-ref";
+			$page->headline = "CXM: New X-Ref";
 		}
 		if ($xref->isNew() === false) {
 			$page->headline = "CXM: $xref->custid $xref->custitemid";
 		}
 		$pages = self::pw('pages');
-		$page->searchcustomersURL = $pages->get('pw_template=mci-lookup')->url;
+		$page->searchcustomersURL = $page->searchLookupUrl('customers');
 		$page->searchitemsURL     = $pages->get('pw_template=itm-search')->url;
-		$page->js .= $config->twig->render('items/cxm/item/form/js.twig', ['cxm' => $cxm, 'xref' => $xref]);
+		$page->js .= $config->twig->render('items/cxm/xref/form/js.twig', ['cxm' => $cxm, 'xref' => $xref]);
 
 		$html = self::xrefDisplay($data, $xref);
 		return $html;
 	}
 
 	private static function xrefDisplay($data, ItemXrefCustomer $xref) {
-		$config  = self::pw('config');
+		$config = self::pw('config');
+		$cxm    = self::getCxm();
+
 		$html = '';
 		$html .= self::cxmHeaders();
 		$html .= self::lockXref($xref);
-		$html .= $config->twig->render('items/cxm/item/form/display.twig', ['item' => $xref, 'cxm' => self::getCxm(), 'qnotes' => self::pw('modules')->get('QnotesItemCxm')]);
-		if (!$xref->isNew()) {
+		$html .= $config->twig->render('items/cxm/xref/form/display.twig', ['item' => $xref, 'cxm' => $cxm, 'qnotes' => self::pw('modules')->get('QnotesItemCxm')]);
+		if ($xref->isNew() === false && $cxm->recordlocker->userHasLocked($cxm->get_recordlocker_key($xref))) {
 			$html .= self::qnotesDisplay($xref);
 		}
 		return $html;
@@ -105,12 +106,11 @@ class Cxm extends AbstractController {
 		$qnotes = self::pw('modules')->get('QnotesItemCxm');
 		$html = '';
 		$html .= '<div class="mt-3"><h3>Notes</h3></div>';
-		$html .= $config->twig->render('items/cxm/item/notes/qnotes.twig', ['item' => $xref, 'qnotes' => $qnotes]);
-		$page->js .= $config->twig->render('items/cxm/item/notes/js.twig', ['qnotes' => $qnotes]);
+		$html .= $config->twig->render('items/cxm/xref/notes/qnotes.twig', ['item' => $xref, 'qnotes' => $qnotes]);
+		$page->js .= $config->twig->render('items/cxm/xref/notes/js.twig', ['qnotes' => $qnotes]);
 		$page->js .= $config->twig->render('msa/noce/ajax/js.twig', ['qnotes' => $qnotes]);
 		return $html;
 	}
-
 
 	private static function cxmHeaders() {
 		$html = '';
@@ -145,7 +145,7 @@ class Cxm extends AbstractController {
 	}
 
 	public static function list($data) {
-		$data = self::sanitizeParametersShort($data, ['custID|text']);
+		self::sanitizeParametersShort($data, ['custID|text']);
 		if ($data->custID) {
 			return self::custXrefs($data);
 		}
@@ -153,7 +153,9 @@ class Cxm extends AbstractController {
 	}
 
 	public static function listCustomers($data) {
-		$data = self::sanitizeParametersShort($data, ['q|text']);
+		self::sanitizeParametersShort($data, ['q|text', 'orderby|text']);
+		Filters\SortFilter::removeFromSession('customer', 'cxm');
+
 		$page    = self::pw('page');
 		$cxm     = self::getCxm();
 		$cxm->recordlocker->deleteLock();
@@ -163,8 +165,13 @@ class Cxm extends AbstractController {
 		$filter->custid($cxm->custids());
 
 		if ($data->q) {
-			$page->headline = "Searching Customers for '$data->q'";
+			$page->headline = "CXM: Searching Customers for '$data->q'";
 			$filter->search($data->q);
+		}
+
+		if (empty($data->q) === false || empty($data->orderby) === false) {
+			$sortFilter = Filters\SortFilter::fromArray(['q' => $data->q, 'orderby' => $data->orderby]);
+			$sortFilter->saveToSession('customer', 'cxm');
 		}
 		$filter->sortby($page);
 		$customers = $filter->query->paginate(self::pw('input')->pageNum, self::pw('session')->display);
@@ -185,23 +192,29 @@ class Cxm extends AbstractController {
 	}
 
 	public static function custXrefs($data) {
-		$data = self::sanitizeParametersShort($data, ['custID|text', 'q|text']);
-		$page    = self::pw('page');
+		self::sanitizeParametersShort($data, ['custID|text', 'q|text', 'orderby|text']);
+		Filters\SortFilter::removeFromSession('xrefs', 'cxm');
+		$page = self::pw('page');
 		$cxm  = self::getCxm();
 		$cxm->recordlocker->deleteLock();
 		$customer = $cxm->customer($data->custID);
 		$filter   = new CxmFilter();
 		$filter->custid($data->custID);
 		$filter->sortby($page);
+		$page->headline = "CXM: $customer->name";
+
 		if ($data->q) {
-			$page->headline = "CXM: $customer->name searching '$data->q'";
+			$page->headline = "CXM: searching $customer->name X-Refs '$data->q'";
 			$filter->search($data->q);
 		}
-		$page->headline           = "CXM: $customer->name";
-		$page->searchcustomersURL = self::pw('pages')->get('pw_template=mci-lookup')->url;
-		$page->js                 .= self::pw('config')->twig->render('items/cxm/list/js.twig');
-		$xrefs = $filter->query->paginate(self::pw('input')->pageNum, self::pw('session')->display);
 
+		if (empty($data->q) === false || empty($data->orderby) === false) {
+			$sortFilter = Filters\SortFilter::fromArray(['q' => $data->q, 'orderby' => $data->orderby]);
+			$sortFilter->saveToSession('xrefs', 'cxm');
+		}
+
+		$page->js .= self::pw('config')->twig->render('items/cxm/list/js.twig');
+		$xrefs = $filter->query->paginate(self::pw('input')->pageNum, self::pw('session')->display);
 		$html = self::customerXrefsDisplay($data, $xrefs);
 		return $html;
 	}
@@ -239,27 +252,48 @@ class Cxm extends AbstractController {
 	}
 
 	/**
-	 * Return URL for Vxm Customer with focus on an x-ref
+	 * Return URL to Customer X-Refs
 	 * @param  string $custID  Customer ID
-	 * @param  string $focus     X-ref Key
+	 * @param  string $focus   X-Ref Key to focus on
 	 * @return string
 	 */
-	public static function custFocusUrl($custID, $focus = '') {
-		$url = new Purl(self::custUrl($custID));
+	public static function xrefListUrl($custID, $focus = '') {
 		if (empty($focus)) {
-			return $url->getUrl();
+			return self::_xrefListUrl($custID);
 		}
-		$cxm = self::getCxm();
-		$xref = $cxm->xref_by_recordlocker_key($focus);
-		if ($xref) {
-			$url->query->set('focus', $focus);
-			$filter = new CxmFilter();
-			$filter->custid($custID);
-			$position = $filter->position($xref);
-			$pagenbr = self::getPagenbrFromOffset($position);
-			$url = self::pw('modules')->get('Dpurl')->paginate($url, self::pw('pages')->get('pw_template=cxm')->name, $pagenbr);
+		$xref = self::getCxm()->xref_by_recordlocker_key($focus);
+
+		if (empty($xref)) {
+			return self::_xrefListUrl($custID);
+		}
+		$url = new Purl(self::_xrefListUrl($custID));
+		$url->query->set('focus', $focus);
+		$sortFilter = Filters\SortFilter::getFromSession('xrefs', 'cxm');
+		$filter = new CxmFilter();
+		$filter->query->setIgnoreCase(false);
+		$filter->custid($custID);
+		if ($sortFilter) {
+			$filter->applySortFilter($sortFilter);
+		}
+		$offset = $filter->positionQuick($xref->custid, $xref->custitemid, $xref->itemid);
+		$url->query->set('offset', $offset);
+
+		$pagenbr = self::getPagenbrFromOffset($offset);
+		$url = self::pw('modules')->get('Dpurl')->paginate($url, self::pw('pages')->get('pw_template=cxm')->name, $pagenbr);
+
+		if ($sortFilter) {
+			if ($sortFilter->q) {
+				$url->query->set('q', $sortFilter->q);
+			}
+			if ($sortFilter->orderby) {
+				$url->query->set('orderby', $sortFilter->orderby);
+			}
 		}
 		return $url->getUrl();
+	}
+
+	public static function _xrefListUrl($custID) {
+		return self::custUrl($custID);
 	}
 
 	/**
@@ -268,30 +302,51 @@ class Cxm extends AbstractController {
 	 * @return string
 	 */
 	public static function custListUrl($custID = '') {
-		$page = self::pw('pages')->get('pw_template=cxm');
 		if (empty($custID)) {
-			return $page->url;
+			return self::_custListUrl();
 		}
-		$url = new Purl($page->url);
+		return self::custListFocusUrl($custID);
+	}
+
+	public static function _custListUrl() {
+		return self::pw('pages')->get('pw_template=cxm')->url;
+	}
+
+	public static function custListFocusUrl($custID) {
+		$url = new Purl(self::_custListUrl());
 		$cxm = self::getCxm();
 		$filter = new CustomerFilter();
 		$filter->init();
 
-		if ($filter->exists($custID)) {
-			$url->query->set('focus', $custID);
-			$filter->custid($cxm->custids());
-			$position = $filter->positionById($custID);
-			$pagenbr = ceil($position / (self::pw('session')->display - 1));
-			if (($position % self::pw('session')->display) == 0) {
-				$pagenbr++;
+		if ($filter->exists($custID) === false) {
+			return $url->getUrl();
+		}
+
+		$sortFilter = Filters\SortFilter::getFromSession('customer', 'cxm');
+		$filter->custid($cxm->custids());
+
+		if ($sortFilter) {
+			$filter->applySortFilter($sortFilter);
+		}
+
+		$offset = $filter->positionQuick($custID);
+		$pagenbr = self::getPagenbrFromOffset($offset);
+		$url = self::pw('modules')->get('Dpurl')->paginate($url, self::pw('pages')->get('pw_template=cxm')->name, $pagenbr);
+		$url->query->set('focus', $custID);
+
+		if ($sortFilter) {
+			if ($sortFilter->q) {
+				$url->query->set('q', $sortFilter->q);
 			}
-			$url = self::pw('modules')->get('Dpurl')->paginate($url, $page->name, $pagenbr);
+			if ($sortFilter->orderby) {
+				$url->query->set('orderby', $sortFilter->orderby);
+			}
 		}
 		return $url->getUrl();
 	}
 
 	/**
-	 * Return URL for Vxm X-ref
+	 * Return URL for Vxm X-Ref
 	 * @param  string $custID      Customer ID
 	 * @param  string $custitemID  Customer Item ID
 	 * @return string
@@ -304,7 +359,7 @@ class Cxm extends AbstractController {
 	}
 
 	/**
-	 * Return URL for Vxm X-ref Deletion
+	 * Return URL for Vxm X-Ref Deletion
 	 * @param  string $custID      Customer ID
 	 * @param  string $custitemID  Customer Item ID
 	 * @return string
@@ -337,7 +392,7 @@ class Cxm extends AbstractController {
 			$p = $event->object;
 			$xref = $event->arguments(0); // Xref
 			$cxm  = self::getCxm();
-			$event->return = self::custFocusUrl($xref->custid, $cxm->get_recordlocker_key($xref));
+			$event->return = self::xrefListUrl($xref->custid, $cxm->get_recordlocker_key($xref));
 		});
 
 		$m->addHook('Page(pw_template=cxm)::xrefUrl', function($event) {
@@ -345,6 +400,12 @@ class Cxm extends AbstractController {
 			$custID     = $event->arguments(0);
 			$custitemID = $event->arguments(1);
 			$event->return = self::xrefUrl($custID, $custitemID);
+		});
+
+		$m->addHook('Page(pw_template=cxm)::xrefNewUrl', function($event) {
+			$p = $event->object;
+			$custID     = $event->arguments(0);
+			$event->return = self::xrefUrl($custID, 'new');
 		});
 
 		$m->addHook('Page(pw_template=cxm)::xrefDeleteUrl', function($event) {

@@ -12,7 +12,7 @@ use Quothed as EditableQuote;
 // Dplus Configs
 use Dplus\Configs;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 
 class Edit extends Base {
 
@@ -32,6 +32,15 @@ class Edit extends Base {
 		}
 
 		return self::lookupForm();
+	}
+
+	public static function editNewQuote($data) {
+		$qnbr = self::pw('user')->get_lockedID();
+
+		if (empty($qnbr)) {
+			return self::pw('config')->twig->render('util/alert.twig', ['type' => 'danger', 'title' => 'Error', 'iconclass' => 'fa fa-warning fa-2x', 'message' => "New Sales Order # not found"]);
+		}
+		self::pw('session')->redirect(self::quoteEditUrl($qnbr), $http301 = false);
 	}
 
 	public static function handleCRUD($data) {
@@ -75,7 +84,7 @@ class Edit extends Base {
 			return self::qtAccessDenied($data);
 		}
 
-		self::pw('page')->headline = "Editing Quote #$data->qnbr";
+		static::setPageTitle($data);
 
 		$eqo = self::getEqo($data->qnbr);
 
@@ -83,18 +92,23 @@ class Edit extends Base {
 			$eqo->requestEditableQuote();
 		}
 		self::initHooks();
-		self::quoteJs($data);
-		return self::display($data);
+		static::quoteJs($data);
+		return static::display($data);
 	}
 
-	private static function quoteJs($data) {
+	protected static function quoteJs($data) {
+		$eqo = self::getEqo($data->qnbr);
 		$config = self::pw('config');
 		$config->scripts->append(self::getFileHasher()->getHashUrl('scripts/lib/jquery-validate.js'));
 		self::pw('page')->js .= $config->twig->render('quotes/quote/edit/classes.js.twig');
-		self::pw('page')->js .= $config->twig->render('quotes/quote/edit/.js.twig');
+		self::pw('page')->js .= $config->twig->render('quotes/quote/edit/.js.twig', ['eqo' => $eqo]);
 	}
 
-	private static function display($data) {
+	protected static function setPageTitle($data) {
+		self::pw('page')->headline = "Editing Quote #$data->qnbr";
+	}
+
+	protected static function display($data) {
 		$eqo = self::getEqo($data->qnbr);
 		$quote = $eqo->getEditableQuote();
 
@@ -139,6 +153,7 @@ class Edit extends Base {
 
 		$html = '';
 		$html .= self::pw('config')->twig->render('quotes/quote/edit/items.twig', ['quote' => $quote, 'eqo' => $eqo]);
+		$html .= self::pw('config')->twig->render('cart/lookup/modal-pricing.twig');
 		return $html;
 	}
 
@@ -179,7 +194,7 @@ class Edit extends Base {
 /* =============================================================
 	Supplemental
 ============================================================= */
-	private static function getEqo($qnbr = '') {
+	protected static function getEqo($qnbr = '') {
 		$eqo = self::pw('modules')->get('Eqo');
 		if ($qnbr) {
 			$eqo->setQnbr($qnbr);

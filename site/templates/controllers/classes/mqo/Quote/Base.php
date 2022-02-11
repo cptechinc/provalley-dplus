@@ -10,10 +10,10 @@ use Dplus\CodeValidators\Mqo as MqoValidator;
 // Dplus Filters
 use Dplus\Filters\Mqo\Quote as FilterQuotes;
 // Mvc Controllers
-use Mvc\Controllers\AbstractController;
+use Mvc\Controllers\Controller;
 use Controllers\Mii\Ii;
 
-abstract class Base extends AbstractController {
+abstract class Base extends Controller {
 	private static $validate;
 	private static $docm;
 	private static $configQt;
@@ -45,6 +45,16 @@ abstract class Base extends AbstractController {
 	protected static function lookupForm() {
 		$config = self::pw('config');
 		$html = $config->twig->render('quotes/quote/lookup-form.twig');
+		return $html;
+	}
+
+	protected static function breadCrumbs() {
+		return self::pw('config')->twig->render('quotes/bread-crumbs.twig');
+	}
+
+	protected static function lookupScreen($data) {
+		$html  = self::breadCrumbs();
+		$html .= self::lookupForm($data);
 		return $html;
 	}
 
@@ -107,7 +117,6 @@ abstract class Base extends AbstractController {
 
 	public static function orderQuoteUrl($qnbr) {
 		$url = new Purl(self::quoteUrl($qnbr));
-		$url->path->add('edit');
 		$url->path->add('order');
 		return $url->getUrl();
 	}
@@ -160,16 +169,5 @@ abstract class Base extends AbstractController {
 			self::$configQt = Configs\Qt::config();
 		}
 		return self::$configQt;
-	}
-
-	/**
-	 * Return Sales Order Config
-	 * @return ProcessWire\FileHasher
-	 */
-	public static function getFileHasher() {
-		if (empty(self::$filehasher)) {
-			self::$filehasher = self::pw('modules')->get('FileHasher');
-		}
-		return self::$filehasher;
 	}
 }

@@ -10,22 +10,21 @@ use ProcessWire\Page, ProcessWire\XrefMxrfe as MxrfeCRUD;
 // Dplus Filters
 use Dplus\Filters\Map\Mxrfe as MxrfeFilter;
 // Mvc Controllers
-use Controllers\Min\Itm\Xrefs;
-use Controllers\Min\Itm\Xrefs\XrefFunction;
 use Controllers\Map\Mxrfe as BaseMxrfe;
 
-class Mxrfe extends XrefFunction {
-
+class Mxrfe extends Base {
+/* =============================================================
+	Indexes
+============================================================= */
 	public static function index($data) {
-		$fields = ['itemID|text', 'action|text'];
-		$data = self::sanitizeParametersShort($data, $fields);
-		$page = self::pw('page');
+		$fields = ['itemID|text', 'mnfrID|text', 'mnfritemID|text', 'action|text'];
+		self::sanitizeParametersShort($data, $fields);
 
 		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
+			return self::displayAlertUserPermission($data);
 		}
 
-		$page->show_breadcrumbs = false;
+		self::pw('page')->show_breadcrumbs = false;
 
 		if (empty($data->action) === false) {
 			return self::handleCRUD($data);
@@ -38,9 +37,8 @@ class Mxrfe extends XrefFunction {
 	}
 
 	public static function handleCRUD($data) {
-		$page    = self::pw('page');
 		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
+			return self::displayAlertUserPermission($data);
 		}
 		$fields = ['itemID|text', 'mnfrID|text', 'mnfritemID|text', 'action|text'];
 		$data  = self::sanitizeParameters($data, $fields);
@@ -53,6 +51,7 @@ class Mxrfe extends XrefFunction {
 			$mxrfe->process_input($input);
 			switch ($data->action) {
 				case 'delete-xref':
+				case 'update-xref':
 					$url = Xrefs::xrefUrlMxrfe($data->itemID);
 					break;
 			}
@@ -60,16 +59,7 @@ class Mxrfe extends XrefFunction {
 		self::pw('session')->redirect($url, $http301 = false);
 	}
 
-	public static function xref($data) {
-		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
-		}
-		$fields = ['itemID|text', 'mnfrID|text', 'mnfritemID|text', 'action|text'];
-		self::sanitizeParametersShort($data, $fields);
-
-		if ($data->action) {
-			return self::handleCRUD($data);
-		}
+	private static function xref($data) {
 		self::initHooks();
 
 		$mxrfe  = BaseMxrfe::mxrfeMaster();
@@ -81,24 +71,49 @@ class Mxrfe extends XrefFunction {
 			$xref->setItemid($data->itemID);
 			$page->headline = "ITM: $data->itemID MXRFE Create X-ref";
 		}
-		$page->js .= self::pw('config')->twig->render('items/mxrfe/item/form/js.twig', ['mxrfe' => $mxrfe, 'xref' => $xref]);
+		$page->js .= self::pw('config')->twig->render('items/mxrfe/xref/form/js.twig', ['mxrfe' => $mxrfe, 'xref' => $xref]);
 		self::pw('session')->removeFor('response', 'mxrfe');
-		return self::xrefDisplay($data, $xref);
+		return self::displayXref($data, $xref);
+	}
+
+	private static function list($data) {
+		if (self::validateItemidAndPermission($data) === false) {
+			return self::displayAlertUserPermission($data);
+		}
+		self::sanitizeParametersShort($data, ['itemID|text', 'q|text']);
+		self::initHooks();
+
+		$mxrfe = BaseMxrfe::mxrfeMaster();
+		$mxrfe->recordlocker->deleteLock();
+
+		$page  = self::pw('page');
+		$page->title = "MXRFE";
+		$page->headline = "ITM: $data->itemID MXRFE";
+
+		$filter = new MxrfeFilter();
+		$filter->itemid($data->itemID);
+		$filter->sortby($page);
+		$xrefs = $filter->query->paginate(self::pw('input')->pageNum, 10);
+		$html = self::displayList($data, $xrefs);
+		self::pw('session')->removeFor('response', 'mxrfe');
+		return $html;
 	}
 
 /* =============================================================
 	Display Functions
 ============================================================= */
-	private static function xrefDisplay($data, ItemXrefManufacturer $xref) {
+	private static function displayXref($data, ItemXrefManufacturer $xref) {
 		$mxrfe  = BaseMxrfe::mxrfeMaster();
 		$qnotes = self::pw('modules')->get('QnotesItemMxrfe');
-		$item   = self::getItm()->get_item($data->itemID);
+		$itm    = self::getItm();
+		$item   = $itm->get_item($data->itemID);
 		$config = self::pw('config');
 
 		$html = '';
+		$html .= self::lockItem($data->itemID);
 		$html .= self::mxrfeHeaders();
 		$html .= BaseMxrfe::lockXref($xref);
-		$html .= $config->twig->render('items/itm/xrefs/mxrfe/form/display.twig', ['xref' => $xref, 'item' => $item, 'mxrfe' => $mxrfe, 'qnotes' => $qnotes]);
+		$html .= $config->twig->render('items/itm/xrefs/mxrfe/form/display.twig', ['xref' => $xref, 'item' => $item, 'mxrfe' => $mxrfe, 'qnotes' => $qnotes, 'itm' => $itm]);
 
 		if (!$xref->isNew()) {
 			$html .= BaseMxrfe::qnotesDisplay($xref);
@@ -119,33 +134,13 @@ class Mxrfe extends XrefFunction {
 		return $html;
 	}
 
-	public static function list($data) {
-		if (self::validateItemidAndPermission($data) === false) {
-			return $page->body;
-		}
-		$data = self::sanitizeParametersShort($data, ['itemID|text', 'q|text']);
-		self::initHooks();
-
-		$mxrfe = BaseMxrfe::mxrfeMaster();
-		$mxrfe->recordlocker->deleteLock();
-
-		$page  = self::pw('page');
-		$page->title = "MXRFE";
-		$page->headline = "ITM: $data->itemID MXRFE";
-
-		$filter = new MxrfeFilter();
-		$filter->itemid($data->itemID);
-		$filter->sortby($page);
-		$xrefs = $filter->query->paginate(self::pw('input')->pageNum, 10);
-		self::pw('session')->removeFor('response', 'mxrfe');
-		return self::listDisplay($data, $xrefs);
-	}
-
-	private static function listDisplay($data, PropelModelPager $xrefs) {
-		$item = self::getItm()->get_item($data->itemID);
+	private static function displayList($data, PropelModelPager $xrefs) {
+		$itm  = self::getItm();
+		$item = $itm->item($data->itemID);
 		$html = '';
+		$html .= self::lockItem($data->itemID);
 		$html .= self::mxrfeHeaders();
-		$html .= self::pw('config')->twig->render('items/itm/xrefs/mxrfe/list/display.twig', ['item' => $item, 'xrefs' => $xrefs, 'mxrfe' => BaseMxrfe::mxrfeMaster()]);
+		$html .= self::pw('config')->twig->render('items/itm/xrefs/mxrfe/list/display.twig', ['item' => $item, 'xrefs' => $xrefs, 'mxrfe' => BaseMxrfe::mxrfeMaster(), 'itm' => $itm]);
 		return $html;
 	}
 
