@@ -9,7 +9,7 @@ class LookupRequests {
 	}
 
 	validateItemid(itemID, callback) {
-		var ajax = new AjaxRequest('{{ page.jsonapiURL('inv/validate/itemid/') }}');
+		var ajax = new AjaxRequest('{{ page.jsonApiUrl('inv/validate/itemid/') }}');
 
 		ajax.setData({itemID: itemID});
 		ajax.request(function(response) {
@@ -18,7 +18,7 @@ class LookupRequests {
 	}
 
 	validateItemidEntry(itemID, custID, shiptoID, callback) {
-		var ajax = new AjaxRequest('{{ page.jsonapiURL('item-lookup/') }}');
+		var ajax = new AjaxRequest('{{ page.jsonApiUrl('item-lookup/') }}');
 
 		ajax.setData({itemID: itemID, custID: custID, shiptoID: shiptoID});
 		ajax.request(function(response) {
@@ -28,7 +28,7 @@ class LookupRequests {
 
 	getItmItem(itemID, fields, callback) {
 		var fields = Array.isArray(fields) ? fields.join(',') : fields;
-		var ajax   = new AjaxRequest('{{ page.jsonapiURL('inv/item/') }}');
+		var ajax   = new AjaxRequest('{{ page.jsonApiUrl('inv/item/') }}');
 
 		ajax.setData({itemID: itemID, fields: fields});
 		ajax.request(function(response) {
@@ -37,7 +37,7 @@ class LookupRequests {
 	}
 
 	getPricing(itemID, custID, callback) {
-		var ajax   = new AjaxRequest('{{ page.jsonapiURL('mso/eso/pricing') }}');
+		var ajax   = new AjaxRequest('{{ page.jsonApiUrl('mso/eso/pricing') }}');
 
 		ajax.setData({itemID: itemID, custID: custID});
 		ajax.request(function(response) {
@@ -46,7 +46,7 @@ class LookupRequests {
 	}
 
 	getCustomer(custID, callback) {
-		var ajax = new AjaxRequest('{{ page.jsonapiURL('mar/customer/') }}');
+		var ajax = new AjaxRequest('{{ page.jsonApiUrl('mar/customer/') }}');
 
 		ajax.setData({custID: custID});
 		ajax.request(function(response) {

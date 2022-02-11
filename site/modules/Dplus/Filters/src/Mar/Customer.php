@@ -1,6 +1,12 @@
 <?php namespace Dplus\Filters\Mar;
-// Dplus Model
+use PDO;
+// Propel
+use Propel\Runtime\Propel;
+use Propel\Runtime\ActiveQuery\Criteria;
+// Dplus Models
 use CustomerQuery, Customer as Model;
+// Dpluso Models
+use CustpermQuery, Custperm;
 // ProcessWire Classes
 use ProcessWire\WireData, ProcessWire\WireInput, ProcessWire\Page, ProcessWire\User;
 // Dplus Filters
@@ -52,12 +58,15 @@ class Customer extends AbstractFilter {
 
 	/**
 	 * Filter User's Customer if Sales Rep
-	 * @param  User   $user [description]
-	 * @return self;
+	 * @param  User   $user
+	 * @return self
 	 */
 	public function user(User $user) {
 		if ($user->is_salesrep()) {
-			$this->query->filterByCustid($user->get_customers(), Criteria::IN);
+			$q = CustpermQuery::create();
+			$q->withColumn('DISTINCT(custid)', 'custid');
+			$q->select('custid');
+			$this->query->filterByCustid($q->find()->toArray(), Criteria::IN);
 		}
 		return $this;
 	}
@@ -81,10 +90,10 @@ class Customer extends AbstractFilter {
 	/**
 	 * Return Customer
 	 * @param  string $custID Customer ID
-	 * @return Customer
+	 * @return Model
 	 */
 	public function getCustomer($custID) {
-		return CustomerQuery::create()->findOneByCustid($custID);
+		return $this->getQueryClass()->findOneByCustid($custID);
 	}
 
 	/**
@@ -93,10 +102,36 @@ class Customer extends AbstractFilter {
 	 * @return int
 	 */
 	public function positionById($custID) {
-		if ($this->exists($custID) === false) {
-			return 0;
+		return $this->positionQuick($custID);
+	}
+
+	/**
+	 * Return Position of Cust ID in result set
+	 * @param  string $custID  Customer ID
+	 * @return int
+	 */
+	public function positionQuick($custID) {
+		$q = $this->getQueryClass()->executeQuery('SET @rownum = 0');
+		$table = $this->getPositionSubSql();
+
+		$sql = "SELECT x.position FROM ($table) x WHERE arcucustid = :custid";
+		$stmt = $this->getPreparedStatementWrapper($sql);
+		$stmt->bindValue(':custid', $custID, PDO::PARAM_STR);
+		$stmt->execute();
+		return $stmt->fetchColumn();
+	}
+
+	/**
+	 * Return Sub Query for getting result set with custid and position
+	 * @return string
+	 */
+	private function getPositionSubSql() {
+		$table = $this->query->getTableMap()::TABLE_NAME;
+		$sql = "SELECT Arcucustid, @rownum := @rownum + 1 AS position FROM $table";
+		$whereClause = $this->getWhereClauseString();
+		if (empty($whereClause) === false) {
+			$sql .= ' WHERE ' . $whereClause;
 		}
-		$v = $this->getCustomer($custID);
-		return $this->position($v);
+		return $sql;
 	}
 }

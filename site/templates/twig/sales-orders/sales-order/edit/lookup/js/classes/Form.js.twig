@@ -23,6 +23,7 @@ class LookupForm {
 		var form   = this;
 
 		serverLookup.validateItemidEntry(inputs.itemid.val(), config.custid, config.shiptoid, function(response) {
+			console.log(response);
 			if (response.exists) {
 				inputs.itemid.val(response.itemid);
 				var validator = form.form.validate();

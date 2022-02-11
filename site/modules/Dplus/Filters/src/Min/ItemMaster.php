@@ -1,7 +1,8 @@
 <?php namespace Dplus\Filters\Min;
+use PDO;
 // Dplus Model
 use ItemMasterItemQuery, ItemMasterItem as Model;
-use WarehouseInventoryQuery, WarehouseInventory;
+use WarehouseInventoryQuery, WarehouseInventory; // WAREHOUSE ITEM MASTER
 use InvWhseLotQuery, InvWhseLot;
 // ProcessWire Classes
 use ProcessWire\WireData, ProcessWire\WireInput, ProcessWire\Page;
@@ -30,25 +31,31 @@ class ItemMaster extends AbstractFilter {
 	Base Filter Functions
 ============================================================= */
 	/**
-	 * Filter ItemIDs by Item's active in X Warehouse
+	 * Filter ItemIDs by Items active in X Warehouse
 	 * @param  string $whseID Warehouse ID
-	 * @return void
+	 * @return self
 	 */
 	 public function active($whseID = '') {
- 		if (empty($whseID)) {
- 			$whseID = $this->wire('user')->whseid;
- 		}
- 		$this->query
- 		->useWarehouseInventoryQuery()
- 			->filterByWarehouseid($whseID)
- 			->filterByStatus(WarehouseInventory::STATUS_ACTIVE)
- 		->endUse();
- 	}
+		if (empty($whseID)) {
+			$whseID = $this->wire('user')->whseid;
+		}
+		$this->query
+		->useWarehouseInventoryQuery()
+			->filterByWarehouseid($whseID)
+			->filterByStatus(WarehouseInventory::STATUS_ACTIVE)
+		->endUse();
+		return $this;
+	}
 
+	/**
+	 * Filter ItemIDs By Items in the Warehouse Lotserial Table
+	 * @return self
+	 */
 	public function inStock() {
 		$q = InvWhseLotQuery::create()->select(InvWhseLot::aliasproperty('itemid'));
 		$q->distinct();
 		$this->query->filterByItemid($q->find()->toArray());
+		return $this;
 	}
 
 /* =============================================================
@@ -73,11 +80,27 @@ class ItemMaster extends AbstractFilter {
 		if (is_object($item)) {
 			$itemID = $item->itemid;
 		}
-		$q = $this->getQueryClass();
-		$q->executeQuery('SET @rownum = 0');
-		$table = $q->getTableMap()::TABLE_NAME;
-		$sql = "SELECT x.position FROM (SELECT InitItemNbr, @rownum := @rownum + 1 AS position FROM $table) x WHERE InitItemNbr = :itemid";
-		$stmt = $q->executeQuery($sql, [':itemid' => $itemID]);
+		$q = $this->getQueryClass()->executeQuery('SET @rownum = 0');
+		$table = $this->getPositionSubSql();
+
+		$sql = "SELECT x.position FROM ($table) x WHERE InitItemNbr = :itemid";
+		$stmt = $this->getPreparedStatementWrapper($sql);
+		$stmt->bindValue(':itemid', $itemID, PDO::PARAM_STR);
+		$stmt->execute();
 		return $stmt->fetchColumn();
+	}
+
+	/**
+	 * Return Sub Query for getting result set with custid and position
+	 * @return string
+	 */
+	private function getPositionSubSql() {
+		$table = $this->query->getTableMap()::TABLE_NAME;
+		$sql = "SELECT InitItemNbr, @rownum := @rownum + 1 AS position FROM $table";
+		$whereClause = $this->getWhereClauseString();
+		if (empty($whereClause) === false) {
+			$sql .= ' WHERE ' . $whereClause;
+		}
+		return $sql;
 	}
 }

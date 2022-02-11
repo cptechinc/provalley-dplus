@@ -106,7 +106,7 @@ class PurchaseOrder extends AbstractFilter {
 	 * @param  WireInput $input Object that Contains the $_GET array for values to filter on
 	 * @return void
 	 */
-	public function filter_input(WireInput $input) {
+	public function filterInput(WireInput $input) {
 		$this->vendoridInput($input);
 		$this->shipfromidInput($input);
 
