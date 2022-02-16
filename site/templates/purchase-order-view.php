@@ -13,7 +13,7 @@
 
 
 	$page->addHook('Page::receivedUrl', function($event) { // inside a class
-		$event->return = Base::receivedUrl($event->arguments(0));
+		$event->return = Base::poReceivedUrl($event->arguments(0));
 	});
 
 	if ($values->action) {

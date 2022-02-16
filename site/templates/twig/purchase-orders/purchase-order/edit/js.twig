@@ -21,7 +21,7 @@ $(function() {
 
 		switch (button.data('search')) {
 			case 'item':
-				url = '{{ page.search_itemsURL() }}';
+				url = '{{ page.searchLookupUrl('items') }}';
 				break;
 			case 'vendoritem':
 				uri = URI('{{ page.search_vxmURL() }}');
