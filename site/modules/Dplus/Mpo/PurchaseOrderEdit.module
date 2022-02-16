@@ -15,6 +15,8 @@ use EditPoHeadQuery, EditPoHead;
 use StatesQuery, States;
 use LogpermQuery, Logperm;
 
+use Dplus\CodeValidators as Validators;
+
 include_once(__DIR__.'/MpoResponse.php');
 
 
@@ -371,6 +373,8 @@ class PurchaseOrderEdit extends WireData implements Module {
 		$invalid = array();
 
 		$validate = $this->wire('modules')->get('ValidatePo');
+		$validate = new Validators\Mpo\Po();
+
 		$fields = array(
 			'vendorid' => array(
 				'description'  => 'Vendor ID',
@@ -392,10 +396,10 @@ class PurchaseOrderEdit extends WireData implements Module {
 				'description'  => 'FOB',
 				'input'        => 'fob'
 			),
-			'exchange_country' => array(
-				'description'  => 'Currency Country Code',
-				'input'        => 'exchange_country'
-			),
+			// 'exchange_country' => array(
+			// 	'description'  => 'Currency Country Code',
+			// 	'input'        => 'exchange_country'
+			// ),
 		);
 
 		foreach ($fields as $property => $field) {
@@ -435,6 +439,20 @@ class PurchaseOrderEdit extends WireData implements Module {
 	}
 
 	/**
+	 * Send Request to Dplus
+	 * @param  array  $data
+	 * @return void
+	 */
+	private function request_dplus_whse(array $data) {
+		$config = $this->wire('config');
+		$dplusdb = $this->wire('modules')->get('DplusOnlineDatabase')->db_name;
+		$data = array_merge(["DBNAME=$dplusdb"], $data);
+		$requestor = $this->wire('modules')->get('DplusRequest');
+		$requestor->write_dplusfile($data, $this->sessionID);
+		$requestor->cgi_request($config->cgis['warehouse'], $this->sessionID);
+	}
+
+	/**
 	 * Send PO Edit Request
 	 * @param  string $ponbr Purchase Order Number
 	 * @return void
@@ -462,7 +480,7 @@ class PurchaseOrderEdit extends WireData implements Module {
 	 */
 	private function request_create_po($vendorID) {
 		$data = array('CREATERECEIVEPO', "VENDORID=$vendorID");
-		$this->request_dplus($data);
+		$this->request_dplus_whse($data);
 		return true;
 	}
 
