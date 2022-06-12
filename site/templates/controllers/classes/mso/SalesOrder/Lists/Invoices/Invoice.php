@@ -69,7 +69,7 @@ class Invoice extends Base {
 	}
 
 	public static function _listUrl() {
-		return self::pw('pages')->get('pw_template=sales-orders-invoices')->url;
+		return self::pw('pages')->get('pw_template=sales-history-orders')->url;
 	}
 
 /* =============================================================
@@ -78,7 +78,7 @@ class Invoice extends Base {
 	public static function initHooks() {
 		$m = self::pw('modules')->get('DpagesMso');
 
-		$m->addHook('Page(pw_template=sales-orders-invoices)::orderUrl', function($event) {
+		$m->addHook('Page(pw_template=sales-history-orders)::orderUrl', function($event) {
 			$event->return = self::orderUrl($event->arguments(0));
 		});
 	}

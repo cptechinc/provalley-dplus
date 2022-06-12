@@ -8,6 +8,7 @@
 	warehouse              Warehouse
 	inventory              module SearchInventory
 #}
+
 <div class="list-group">
 	{% if (inventory.count_itemids_distinct(page.binID)) %}
 		{% for item in inventory.get_items_distinct(page.binID) %}
@@ -20,6 +21,7 @@
 				{% if (item.is_serialized() or item.is_lotted()) %}
 					<div class="d-flex justify-content-between p-2 mb-1">
 						<span><strong>Lots:</strong> {{ inventory.count_lotserials_itemid(item.itemid, page.binID) }}</span>
+						<span><strong>Weight:</strong> {{ inventory.get_qty_itemid(item.itemid, page.binID)|number_format(config.decimal_places())  }}</span>
 						{% if (not page.is_print()) %}
 							<button type="button" class="btn btn-primary btn-sm mb-3" data-toggle="collapse" data-target="#{{ item.itemid|attrJS  }}-lotserial" aria-expanded="false" aria-controls="{{ item.itemid }}-lotserial">
 								Show / Hide {{ item.get_itemtypepropertydesc()|upper ~ "S" }}

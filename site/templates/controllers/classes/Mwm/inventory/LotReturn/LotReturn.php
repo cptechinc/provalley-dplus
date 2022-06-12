@@ -8,7 +8,7 @@ use SalesOrderQuery, SalesOrder;
 use PurchaseOrderQuery, PurchaseOrder;
 use ItemMasterItemQuery, ItemMasterItem;
 // ProcessWire Classes, Modules
-use ProcessWire\Page, ProcessWire\Module, ProcessWire\WireData;
+use ProcessWire\Page, ProcessWire\Module, ProcessWire\WireData, ProcessWire\User;
 use Processwire\SearchInventory, Processwire\WarehouseManagement,ProcessWire\HtmlWriter;
 // Dplus Configs
 use Dplus\Configs;

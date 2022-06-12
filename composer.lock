@@ -12,17 +12,18 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/cptechinc/dplus-model.git",
-                "reference": "9bb4b9eb8c751160ac70f44a59fbdbd1fd9bb603"
+                "reference": "deef992b868bb98321e92562ce17d45c96b95808"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cptechinc/dplus-model/zipball/9bb4b9eb8c751160ac70f44a59fbdbd1fd9bb603",
-                "reference": "9bb4b9eb8c751160ac70f44a59fbdbd1fd9bb603",
+                "url": "https://api.github.com/repos/cptechinc/dplus-model/zipball/deef992b868bb98321e92562ce17d45c96b95808",
+                "reference": "deef992b868bb98321e92562ce17d45c96b95808",
                 "shasum": ""
             },
             "require": {
                 "propel/propel": "dev-master#3087361bd27f3598f3ecd70e9fd272a5c2575b88"
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "classmap": [
@@ -38,7 +39,11 @@
                 "data",
                 "dplus-model"
             ],
-            "time": "2022-02-10T19:56:19+00:00"
+            "support": {
+                "issues": "https://github.com/cptechinc/dplus-model/issues",
+                "source": "https://github.com/cptechinc/dplus-model/tree/master"
+            },
+            "time": "2022-05-27T18:39:09+00:00"
         },
         {
             "name": "cptechinc/dpluso-model",
@@ -54,6 +59,7 @@
                 "reference": "9536db816f1bcd5d57702a534ba289ef17f2eb5e",
                 "shasum": ""
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "classmap": [
@@ -73,6 +79,10 @@
                 "qnote",
                 "quote"
             ],
+            "support": {
+                "issues": "https://github.com/cptechinc/dpluso-model/issues",
+                "source": "https://github.com/cptechinc/dpluso-model/tree/master"
+            },
             "time": "2021-11-24T15:36:46+00:00"
         },
         {
@@ -2385,5 +2395,6 @@
         "php": ">=7.0.0",
         "ext-gd": "*"
     },
-    "platform-dev": []
+    "platform-dev": [],
+    "plugin-api-version": "2.0.0"
 }
