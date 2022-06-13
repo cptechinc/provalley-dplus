@@ -15,6 +15,9 @@ class StockStatus extends Base {
 	Indexes
 ============================================================= */
 	public static function index($data) {
+		set_time_limit(480);
+		ini_set('memory_limit', '2048M');
+
 		$fields = ['download|text'];
 		self::sanitizeParametersShort($data, $fields);
 		self::pw('page')->headline = "Inventory Stock Report";
@@ -25,13 +28,13 @@ class StockStatus extends Base {
 	}
 
 	private static function download($data) {
+		header('Content-Description: File Transfer');
 		$report = new Report();
 
 		switch ($data->download) {
 			case 'xlsx':
 				$file = $report->exportSpreadsheet();
 				$mime = mime_content_type($file);
-				header('Content-Description: File Transfer');
 				header("Content-Type: $mime; charset=utf-8");
 				header("Content-Disposition: attachment; filename=\"".basename($file)."\"");
 				header("Content-Transfer-Encoding: binary");

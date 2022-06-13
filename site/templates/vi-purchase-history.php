@@ -32,7 +32,7 @@
 					$session->redirect($page->get_vipurchasehistoryURL($vendorID, $shipfromID, $date));
 				}
 				$session->purchasehistorytry = 0;
-				
+
 				$refreshurl = $page->get_vipurchasehistoryURL($vendorID, $shipfromID, $date);
 				$page->body .= $config->twig->render('vendors/vi/vi-links.twig', ['page' => $page, 'lastmodified' => $module_json->file_modified(session_id(), $page->jsoncode), 'refreshurl' => $refreshurl]);
 
@@ -54,8 +54,8 @@
 				}
 			}
 		} else {
-			$page->body .= $config->twig->render('vendors/vi/vi-links.twig', ['page' => $page, 'refreshurl' => $refreshurl]);
-			$page->body .= $config->twig->render('vendors/vi/purchase-history/date-form.twig', ['page' => $page, 'vendorID' => $vendorID, 'json' => $json]);
+			$page->body .= $config->twig->render('vendors/vi/vi-links.twig', ['page' => $page, 'refreshurl' => '']);
+			$page->body .= $config->twig->render('vendors/vi/purchase-history/date-form.twig', ['page' => $page, 'vendorID' => $vendorID]);
 		}
 	}
 

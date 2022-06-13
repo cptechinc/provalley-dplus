@@ -1,9 +1,13 @@
 <?php namespace Dplus\Wm\Reports\Inventory\StockStatus\Export;
+// Cache
+use Cache\Adapter\Apcu\ApcuCachePool;
+use Cache\Bridge\SimpleCache\SimpleCacheBridge;
 // PhpSpreadsheet Library
 use PhpOffice\PhpSpreadsheet\Spreadsheet as PhpSpreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style as SpreadsheetStyles;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Settings as PhpSpreadsheetSettings;
 // ProcessWire
 use ProcessWire\WireData;
 // Dplus Spreadsheets
@@ -80,6 +84,7 @@ class Spreadsheet extends WireData {
 	 * @return bool
 	 */
 	public function export() {
+		$this->initCache();
 		$this->writeHeader();
 		$this->writeBody();
 		$writer = new DplusSS\Writers\Xlsx();
@@ -231,5 +236,15 @@ class Spreadsheet extends WireData {
 			}
 			$row++;
 		}
+	}
+
+	/**
+	 * Initialize Apcu Cache for Caching
+	 * @return void
+	 */
+	protected function initCache() {
+		$pool = new ApcuCachePool();
+		$simpleCache = new SimpleCacheBridge($pool);
+		PhpSpreadsheetSettings::setCache($simpleCache);
 	}
 }

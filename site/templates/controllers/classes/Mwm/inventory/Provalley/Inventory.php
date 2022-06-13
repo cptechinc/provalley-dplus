@@ -4,7 +4,7 @@ use stdClass;
 // Purl Library
 use Purl\Url as Purl;
 // ProcessWire Classes, Modules
-use ProcessWire\Page, ProcessWire\Module, ProcessWire\WireData;
+use ProcessWire\Page, ProcessWire\Module, ProcessWire\WireData, ProcessWire\User;
 // Mvc Controllers
 use Controllers\Wm\Base;
 

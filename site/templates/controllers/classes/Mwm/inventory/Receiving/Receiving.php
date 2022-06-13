@@ -171,6 +171,7 @@ class Receiving extends Base {
 		$q->filterByScan($data->scan);
 
 		if ($q->count() == 1) {
+			exit;
 			self::processScanSingle($data);
 		}
 

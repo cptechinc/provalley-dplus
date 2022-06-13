@@ -36,7 +36,7 @@ class Ci extends Base {
 		// 'stock'          => [],
 		// 'notes'          => [],
 		'documents'      => [],
-		'phonebook'      => [],
+		// 'phonebook'      => [],
 		// 'activity'       => [],
 		'corebank'       => ['title' => 'Core'],
 	];

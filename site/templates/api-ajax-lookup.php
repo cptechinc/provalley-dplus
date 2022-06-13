@@ -27,9 +27,19 @@
 			$filter = new Dplus\Filters\Min\ItemMaster();
 			break;
 	}
+	if (method_exists($filter, 'init_query')) {
+		$filter->init_query();
+	}
 
-	$filter->init_query();
-	$filter->filter_input($input);
+	if (method_exists($filter, 'filter_input')) {
+		$filter->filter_input($input);
+	}
+
+	if (method_exists($filter, 'filterInput')) {
+		$filter->filterInput($input);
+	}
+
+
 
 	switch ($page->ajaxcode) {
 		case 'items':
@@ -44,8 +54,18 @@
 		$filter->search($q);
 		$page->headline = "Searching for '$q'";
 	}
-	$filter->apply_sortby($page);
-	$query = $filter->get_query();
+
+	if (method_exists($filter, 'apply_sortby')) {
+		$filter->apply_sortby($page);
+	}
+
+	if (method_exists($filter, 'get_query')) {
+		$query = $filter->get_query();
+	}
+
+	if (method_exists($filter, 'filterInput')) {
+		$query = $filter->query;
+	}
 
 	$twigloader = $config->twig->getLoader();
 	$results = $query->paginate($input->pageNum, 10);

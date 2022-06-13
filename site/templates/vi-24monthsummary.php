@@ -12,11 +12,11 @@
 		if ($module_json->file_exists(session_id(), $page->jsoncode)) {
 			if ($json['vendid'] != $vendorID) {
 				$module_json->remove_file(session_id(), $page->jsoncode);
-				$session->redirect($page->get_vi24monthsummaryURL($vendorID, $date));
+				$session->redirect($page->get_vi24monthsummaryURL($vendorID));
 			}
 
 			$session->monthsummarytry = 0;
-			$refreshurl = $page->get_vi24monthsummaryURL($vendorID, $date);
+			$refreshurl = $page->get_vi24monthsummaryURL($vendorID);
 			$page->body .= $config->twig->render('vendors/vi/vi-links.twig', ['page' => $page, 'lastmodified' => $module_json->file_modified(session_id(), $page->jsoncode), 'refreshurl' => $refreshurl]);
 
 			if ($json['error']) {

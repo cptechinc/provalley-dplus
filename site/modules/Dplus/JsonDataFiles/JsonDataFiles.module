@@ -184,7 +184,7 @@ class JsonDataFiles extends WireData implements Module {
 		$basefile = $this->get_filename($jsoncode);
 		$filepath = $this->wire('config')->jsonfilepath;
 		$jsonfile = $filepath."$sessionID-$basefile.json";
-		return unlink($jsonfile);
+		return file_exists($jsonfile) ? unlink($jsonfile) : true;
 	}
 
 	/**
@@ -198,7 +198,7 @@ class JsonDataFiles extends WireData implements Module {
 		$basefile = $this->get_filename($jsoncode);
 		$filepath = $this->wire('config')->jsonfilepath;
 		$jsonfile = $filepath."$sessionID-$basefile.json";
-		return filemtime($jsonfile);
+		return file_exists($jsonfile) ? filemtime($jsonfile) : 0;
 	}
 
 	/**

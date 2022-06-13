@@ -5,7 +5,7 @@ use stdClass;
 use Purl\Url as Purl;
 // ProcessWire Classes, Modules
 use ProcessWire\Page, ProcessWire\Module, ProcessWire\WireData;
-use Processwire\SearchInventory, Processwire\WarehouseManagement,ProcessWire\HtmlWriter;
+use Processwire\SearchInventory, Processwire\WarehouseManagement,ProcessWire\HtmlWriter, ProcessWire\User;
 // Dplus Configs
 use Dplus\Configs;
 // Dplus Filters

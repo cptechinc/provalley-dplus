@@ -393,7 +393,6 @@ class DpagesMvi extends Dpages implements Module {
 			$url = new Url($p->get_redirURL());
 			$url->query->set('action','vi-24monthsummary');
 			$url->query->set('vendorID', $vendorID);
-			$url->query->set('date', $date);
 			$url->query->set('page', $p->fullURL->getUrl());
 			$event->return = $url->getUrl();
 		});
