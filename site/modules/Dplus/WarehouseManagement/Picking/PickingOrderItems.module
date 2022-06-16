@@ -58,7 +58,7 @@ class PickingOrderItems extends WireData implements Module {
 		$picking_master->filterByLinenbr($linenbr);
 		return $picking_master->findOne();
 	}
-	
+
 	/**
 	 * Returns if this Picking Order has any Sublines
 	 * @return bool
@@ -79,6 +79,13 @@ class PickingOrderItems extends WireData implements Module {
 		$q = PickSalesOrderDetailQuery::create();
 		$q->filterBySessionidOrder($this->sessionID, $this->ordn);
 		$q->filterByItemid($itemID);
+		return boolval($q->count());
+	}
+
+	public function hasQtyRemaining() {
+		$q = PickSalesOrderDetailQuery::create();
+		$q->filterBySessionidOrder($this->sessionID, $this->ordn);
+		$q->filterByQtyremaining(array('min' => 1));
 		return boolval($q->count());
 	}
 

@@ -62,6 +62,12 @@ class Items extends Base {
 		return $q->find();
 	}
 
+	public function hasQtyRemaining() {
+		$q = $this->queryOrdn();
+		$q->filterByQtyremaining(array('min' => 1));
+		return boolval($q->count());
+	}
+
 	/**
 	 * Return Pick Order Items
 	 * @param  bool   $picked Return Picked ITems? (false = return only unpicked)

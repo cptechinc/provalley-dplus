@@ -35,6 +35,27 @@ $(function() {
 		form.submit();
 	});
 
+	$("body").on("click", "a.finish-picking", function(e) {
+		e.preventDefault();
+		var link = $(this);
+
+		if (link.data('hasremaining') == true) {
+			swal2.fire({
+				title: 'Are you finished?',
+				text: "There are lines that aren't fulfilled",
+				icon: 'warning',
+				showCancelButton: true,
+				confirmButtonText: 'Yes!'
+			}).then(function (result) {
+				if (result.value) {
+					window.location.href = link.attr('href');
+				}
+			});
+		} else {
+			window.location.href = link.attr('href');
+		}
+	});
+
 	$("body").on("click", ".change-bin", function(e) {
 		e.preventDefault();
 		var button = $(this);

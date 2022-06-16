@@ -1,5 +1,5 @@
 <div class="form-group">
-	<a href="{{ page.get_finishorderURL() }}" class="btn btn-success">
+	<a href="{{ page.get_finishorderURL() }}" class="btn btn-success finish-picking" data-hasremaining="{{ m_picking.items.hasQtyRemaining() ? 'true' : 'false' }}">
 		<i class="fa fa-floppy-o" aria-hidden="true"></i> Finish Picking
 	</a>
 	&nbsp;
