@@ -1,3 +1,9 @@
+{% if session.getFor('picking', 'ordn') %}
+	<div class="alert alert-warning" role="alert">
+		Last Picked Sales Order # <a href="{{ page.orderUrl(session.getFor('picking', 'ordn')) }}" class="link">{{ session.getFor('picking', 'ordn') }}</a>
+	</div>
+{% endif %}
+
 <h3>Enter Order Number</h3>
 
 <form action="{{ page.url }}" method="get" class="allow-enterkey-submit sales-order-entry-form" id="sales-order-entry-form">

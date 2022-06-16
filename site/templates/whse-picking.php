@@ -1,10 +1,17 @@
 <?php
+	include($modules->get('Mvc')->controllersPath().'vendor/autoload.php');
+	use Controllers\Mso\SalesOrder\SalesOrder as SalesOrderController;
 	$whsesession = WhsesessionQuery::create()->findOneBySessionid(session_id());
 	$warehouse   = WarehouseQuery::create()->findOneByWhseid($whsesession->whseid);
 	$config->inventory = $modules->get('ConfigsWarehouseInventory');
 	$config->picking   = $modules->get('ConfigsWarehousePicking');
+
 	$rm = strtolower($input->requestMethod());
 	$values = $input->$rm;
+
+	$page->addHook('orderUrl', function($event) {
+		$event->return = SalesOrderController::orderUrl($event->arguments(0));
+	});
 
 	$template = '';
 

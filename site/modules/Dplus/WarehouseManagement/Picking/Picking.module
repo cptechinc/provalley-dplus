@@ -91,22 +91,26 @@ class Picking extends WireData implements Module {
 					$this->wire('page')->fullURL->query->set('scan', $values->text('scan'));
 					break;
 				case 'exit-order':
+					$this->session->removeFor('picking', 'ordn');
 					$this->send_exit_order_request($values->text('ordn'));
 					$this->wire('page')->fullURL->query->remove('ordn');
 					$this->wire('page')->fullURL->query->remove('scan');
 					$this->wire('page')->fullURL->query->remove('action');
 					break;
 				case 'finish-order':
+					$this->session->setFor('picking', 'ordn', $values->text('ordn'));
 					$this->send_finish_order_request($values->text('ordn'));
 					$this->wire('page')->fullURL->query->remove('ordn');
 					$this->wire('page')->fullURL->query->remove('scan');
 					$this->wire('page')->fullURL->query->remove('action');
 					break;
 				case 'start-order':
+					$this->session->setFor('picking', 'ordn', $values->text('ordn'));
 					$this->send_start_order_request($values->text('ordn'));
 					$this->wire('page')->fullURL->query->remove('action');
 					break;
 				case 'unlock-order':
+					$this->session->removeFor('picking', 'ordn');
 					$this->send_unlock_order_request($values->text('ordn'));
 					$this->wire('page')->fullURL->query->remove('action');
 					$this->wire('page')->fullURL->query->remove('ordn');
