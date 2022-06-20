@@ -11,6 +11,11 @@ class LookupConfig {
 	constructor() {
 		this.custid = '{{ order.custid }}';
 		this.shiptoid = '{{ order.shiptoid }}';
+		this.fields = {
+			price: {
+				precision: {{ eso.decimal_places_price() }}
+			},
+		}
 	}
 
 }
