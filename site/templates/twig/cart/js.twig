@@ -3,6 +3,7 @@
 $(function() {
 	var serverCart = CartRequests.getInstance();
 	var alertCart  = CartAlerts.getInstance();
+	var configCart  = CartConfig.getInstance();
 
 /* =============================================================
 	Header Functions
@@ -21,9 +22,10 @@ $(function() {
 		e.preventDefault();
 		var input = $(this);
 		var price = parseFloat(input.val());
+		price += parseFloat(configCart.addToPrice);
 		var form = new EditForm();
 		form.setForm(input.closest('form'));
-		input.val(price.toFixed(form.config.fields.price.precision));
+		input.val(price.toFixed(configCart.fields.price.precision));
 		form.updateTotals();
 		var row   = input.closest('.cart-item');
 		row.removeClass('highlight');

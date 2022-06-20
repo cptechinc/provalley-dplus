@@ -23,7 +23,6 @@ class LookupForm {
 		var form   = this;
 
 		serverLookup.validateItemidEntry(inputs.itemid.val(), config.custid, config.shiptoid, function(response) {
-			console.log(response);
 			if (response.exists) {
 				inputs.itemid.val(response.itemid);
 				var validator = form.form.validate();
@@ -34,6 +33,8 @@ class LookupForm {
 					form.updatePricing(function() {
 						$('#loading-modal').modal('hide');
 						var price = parseFloat(inputs.price.val());
+						console.log(form.config.addToPrice);
+						price += parseFloat(form.config.addToPrice);
 						inputs.price.val(price.toFixed(form.config.fields.price.precision));
 
 						if (inputs.qty.val() == '') {

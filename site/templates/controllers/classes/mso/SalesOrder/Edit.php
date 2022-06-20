@@ -138,13 +138,14 @@ class Edit extends Base {
 		$config = self::pw('config');
 		$page->headline = "Editing Sales Order #$data->ordn";
 		$order = $eso->get_editable_header($data->ordn);
+		$orderReadonly = $eso->get_order_static($data->ordn);
 		$html = '';
 		$html .= self::soEditHeader($eso, $order);
 		$html .= self::soEditItems($eso, $order);
-		$html .= self::itemLookupForm($eso, $order);
+		$html .= self::itemLookupForm($eso, $orderReadonly);
 		$html .= self::qnotes($order->ordernumber);
 		$html .= self::setupCstkLastSold($order);
-		$html .= self::js($eso, $order->ordernumber);
+		$html .= self::js($eso, $orderReadonly);
 		$html .= $config->twig->render('sales-orders/sales-order/edit/edit-item/modal.twig', ['ordn' => $order->ordernumber]);
 		return $html;
 	}
@@ -179,7 +180,7 @@ class Edit extends Base {
 		return $html;
 	}
 
-	private static function itemLookupForm(EsoCRUD $eso, SalesOrderEditable $order) {
+	private static function itemLookupForm(EsoCRUD $eso, SalesOrder $order) {
 		$html = '';
 
 		if (self::pw('user')->is_editingorder($order->ordernumber) === false) {
@@ -218,14 +219,14 @@ class Edit extends Base {
 		return $html;
 	}
 
-	private static function js(EsoCRUD $eso, $ordn) {
+	private static function js(EsoCRUD $eso, SalesOrder $order) {
 		$config = self::pw('config');
 		$page   = self::pw('page');
 		$html   = '';
 
-		if (self::pw('user')->is_editingorder($ordn)) {
+		if (self::pw('user')->is_editingorder($order->ordernumber)) {
 			$html .= $config->twig->render('util/js-variables.twig', ['variables' => array('shiptos' => $eso->get_shiptos_json_array())]);
-			$page->js   .= $config->twig->render('sales-orders/sales-order/edit/js/js.twig', ['eso' => $eso]);
+			$page->js   .= $config->twig->render('sales-orders/sales-order/edit/js/js.twig', ['eso' => $eso, 'order' => $order]);
 			$config->scripts->append(self::getFileHasher()->getHashUrl('scripts/lib/jquery-validate.js'));
 		}
 		return $html;
